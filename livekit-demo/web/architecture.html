@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiveKit 语音助手 · 系统架构与选型分析</title>
+<style>
+  :root {
+    --ink: #1a2332; --paper: #f7f4ed; --accent: #2563eb; --ok: #16a34a;
+    --muted: #6b7280; --line: #d8d3c8; --card: #fffdf8; --danger: #dc2626;
+    --warn: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--paper); color: var(--ink); padding: 24px; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  h2 { font-size: 16px; margin: 26px 0 10px; }
+  h2 .no { display: inline-block; background: var(--accent); color: #fff; border-radius: 6px; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 13px; margin-right: 8px; vertical-align: 2px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+
+  /* 架构图 */
+  svg text { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+  /* 能力清单 */
+  .caps { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .cap { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .cap .t { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .cap .t .e { margin-right: 6px; }
+  .cap .d { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .cap.now .t::after { content: "已实测"; font-size: 10px; font-weight: 400; color: var(--ok); border: 1px solid var(--ok); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+  .cap.next .t::after { content: "开箱支持"; font-size: 10px; font-weight: 400; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+
+  /* 优劣势 */
+  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .pc { grid-template-columns: 1fr; } }
+  .pc ul { list-style: none; }
+  .pc li { font-size: 13px; line-height: 1.6; padding: 6px 0 6px 24px; position: relative; border-bottom: 1px dashed var(--line); }
+  .pc li:last-child { border-bottom: none; }
+  .pc li::before { position: absolute; left: 2px; font-weight: 700; }
+  .pro li::before { content: "✓"; color: var(--ok); }
+  .con li::before { content: "✗"; color: var(--danger); }
+  .pc h3 { font-size: 14px; margin-bottom: 6px; }
+  .pro h3 { color: var(--ok); }
+  .con h3 { color: var(--danger); }
+  .pc small { color: var(--muted); }
+
+  /* 差异化对比表 */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--card); }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; line-height: 1.5; }
+  th { background: #eef2ff; font-size: 12px; }
+  td.best { background: #f0fdf4; font-weight: 600; color: #14532d; }
+  td.bad { color: var(--danger); }
+  .hl { background: #fef3c7; border: 1px solid var(--warn); border-radius: 10px; padding: 14px 16px; margin-top: 14px; font-size: 13.5px; line-height: 1.7; }
+  .hl b { color: #92400e; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>LiveKit Agents 语音助手 · 系统架构与选型分析</h1>
+  <div class="sub">六框架横向实测后的选定路线 · 2026-07-27 · 配套演示：<a href="/">通话 Demo</a></div>
+
+  <h2><span class="no">0</span>系统架构图</h2>
+  <div class="card">
+  <svg viewBox="0 0 920 470" width="100%" role="img" aria-label="系统架构图">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+      </marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
+      </marker>
+    </defs>
+
+    <!-- 边框分组：本地部署 -->
+    <rect x="150" y="20" width="440" height="380" rx="12" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="6 4"/>
+    <text x="170" y="44" font-size="12" fill="#64748b" font-weight="700">本地私有化部署（内网可跑）</text>
+
+    <!-- 云端 -->
+    <rect x="650" y="20" width="250" height="200" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-dasharray="6 4"/>
+    <text x="670" y="44" font-size="12" fill="#c2410c" font-weight="700">云端模型服务</text>
+
+    <!-- 浏览器 -->
+    <rect x="20" y="120" width="110" height="150" rx="10" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="75" y="148" text-anchor="middle" font-size="13" font-weight="700">浏览器</text>
+    <text x="75" y="168" text-anchor="middle" font-size="10.5" fill="#475569">livekit-client JS</text>
+    <text x="75" y="184" text-anchor="middle" font-size="10.5" fill="#475569">麦克风采集/播放</text>
+    <text x="75" y="200" text-anchor="middle" font-size="10.5" fill="#475569">FastRTC 风格 UI</text>
+    <text x="75" y="228" text-anchor="middle" font-size="10" fill="#2563eb">:8899 页面</text>
+
+    <!-- Token Server -->
+    <rect x="180" y="70" width="140" height="64" rx="10" fill="#fff" stroke="#d8d3c8"/>
+    <text x="250" y="94" text-anchor="middle" font-size="12" font-weight="700">Token Server</text>
+    <text x="250" y="112" text-anchor="middle" font-size="10.5" fill="#475569">FastAPI :8899 签发 JWT</text>
+
+    <!-- LiveKit Server -->
+    <rect x="180" y="180" width="140" height="110" rx="10" fill="#eef2ff" stroke="#818cf8" stroke-width="1.5"/>
+    <text x="250" y="206" text-anchor="middle" font-size="13" font-weight="700">LiveKit Server</text>
+    <text x="250" y="224" text-anchor="middle" font-size="10.5" fill="#475569">SFU 传输层 · WebRTC</text>
+    <text x="250" y="240" text-anchor="middle" font-size="10.5" fill="#475569">房间/参与者管理</text>
+    <text x="250" y="256" text-anchor="middle" font-size="10.5" fill="#475569">Docker :7880 (--dev)</text>
+    <text x="250" y="276" text-anchor="middle" font-size="10" fill="#2563eb">创建房间时派发 Agent Job</text>
+
+    <!-- Agent Worker -->
+    <rect x="400" y="170" width="170" height="150" rx="10" fill="#eef2ff" stroke="#818cf8" stroke-width="1.5"/>
+    <text x="485" y="196" text-anchor="middle" font-size="13" font-weight="700">Agent Worker（Python）</text>
+    <text x="485" y="214" text-anchor="middle" font-size="10.5" fill="#475569">livekit-agents 1.1.7（锁版）</text>
+    <text x="485" y="230" text-anchor="middle" font-size="10.5" fill="#475569">Silero VAD 本地推理</text>
+    <text x="485" y="246" text-anchor="middle" font-size="10.5" fill="#475569">barge-in 打断编排</text>
+    <text x="485" y="262" text-anchor="middle" font-size="10.5" fill="#475569">工具调用 / 会话状态机</text>
+    <text x="485" y="278" text-anchor="middle" font-size="10.5" fill="#475569">metadata 回显补丁</text>
+    <text x="485" y="302" text-anchor="middle" font-size="10" fill="#2563eb">可挂：RAG / 多模型 / SIP</text>
+
+    <!-- 百炼 -->
+    <rect x="680" y="70" width="190" height="110" rx="10" fill="#fff" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="775" y="96" text-anchor="middle" font-size="13" font-weight="700">阿里云百炼 Realtime</text>
+    <text x="775" y="114" text-anchor="middle" font-size="10.5" fill="#475569">qwen3-omni-flash-realtime</text>
+    <text x="775" y="130" text-anchor="middle" font-size="10.5" fill="#475569">STT + LLM + TTS 一体</text>
+    <text x="775" y="146" text-anchor="middle" font-size="10.5" fill="#475569">voice = Cherry</text>
+    <text x="775" y="166" text-anchor="middle" font-size="10" fill="#c2410c">仅兼容 OpenAI beta 协议</text>
+
+    <!-- 箭头 -->
+    <line x1="130" y1="195" x2="176" y2="215" stroke="#2563eb" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="152" y="196" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700">WebRTC</text>
+    <text x="152" y="232" text-anchor="middle" font-size="9" fill="#64748b">音频轨</text>
+
+    <line x1="130" y1="120" x2="196" y2="106" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrG)"/>
+    <text x="160" y="98" text-anchor="middle" font-size="9.5" fill="#64748b">HTTP 取 token</text>
+
+    <line x1="320" y1="235" x2="396" y2="240" stroke="#2563eb" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="358" y="226" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700">房间事件</text>
+    <text x="358" y="256" text-anchor="middle" font-size="9" fill="#64748b">job 分发 + 媒体转发</text>
+
+    <line x1="570" y1="230" x2="676" y2="140" stroke="#2563eb" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="636" y="172" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700">WebSocket</text>
+    <text x="636" y="196" text-anchor="middle" font-size="9" fill="#64748b">Realtime beta 协议</text>
+
+    <!-- 延迟标注 -->
+    <rect x="180" y="350" width="390" height="36" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="375" y="373" text-anchor="middle" font-size="12" fill="#14532d" font-weight="700">实测端到端首音频延迟 ~514ms（其中编排成本 ~260ms）</text>
+
+    <!-- 底部数据通路图例 -->
+    <text x="30" y="430" font-size="11" fill="#64748b">━━ 实时音频通路（双向，可打断）</text>
+    <text x="320" y="430" font-size="11" fill="#64748b">╌╌ 控制/信令通路</text>
+    <text x="30" y="452" font-size="11" fill="#64748b">部署形态：浏览器 + Token Server + LiveKit Server(Docker) + Agent Worker 全部本机；仅模型走公网百炼</text>
+  </svg>
+  </div>
+
+  <h2><span class="no">1</span>能力范围</h2>
+  <div class="caps">
+    <div class="cap now"><div class="t"><span class="e">🗣️</span>实时全双工语音对话</div><div class="d">浏览器 ↔ 百炼 realtime 一体模型，边说边听，端到端 ~514ms</div></div>
+    <div class="cap now"><div class="t"><span class="e">✋</span>插话打断（barge-in）</div><div class="d">助手说话中可随时插嘴，Silero VAD 本地检测 + server_vad 双保险</div></div>
+    <div class="cap now"><div class="t"><span class="e">🏠</span>私有化部署</div><div class="d">传输层全本机（Docker LiveKit + Python Worker），仅模型出公网；可整体搬进内网</div></div>
+    <div class="cap now"><div class="t"><span class="e">📞</span>电话式前端交互</div><div class="d">FastRTC 风格脉冲通话球 + 静音控制，零学习成本演示</div></div>
+    <div class="cap next"><div class="t"><span class="e">🔧</span>工具调用 / Function Calling</div><div class="d">Agent 框架一等公民：查数据、执行业务动作、调度内部系统</div></div>
+    <div class="cap next"><div class="t"><span class="e">📚</span>知识库 RAG</div><div class="d">框架内置检索管线，企业文档问答可直接挂接</div></div>
+    <div class="cap next"><div class="t"><span class="e">🧠</span>多模型混编（双 LLM 终态）</div><div class="d">flash 模型先出声抢延迟，高推理模型后台补充 —— 鱼和熊掌兼得</div></div>
+    <div class="cap next"><div class="t"><span class="e">☎️</span>电话 SIP 接入</div><div class="d">同一 Agent 直接接电话线，客服/外呼场景无需重写</div></div>
+    <div class="cap next"><div class="t"><span class="e">👥</span>多方会议 / 视频</div><div class="d">SFU 天然支持多人多轨，可加视觉理解（omni 模型本身支持视频输入）</div></div>
+    <div class="cap next"><div class="t"><span class="e">🔀</span>模型可替换</div><div class="d">换 OpenAI Realtime / Gemini Live 只改 Worker 配置，前端与传输层零改动</div></div>
+  </div>
+
+  <h2><span class="no">2</span>优势与劣势</h2>
+  <div class="pc">
+    <div class="card pro">
+      <h3>优势</h3>
+      <ul>
+        <li><b>工程能力天花板高</b> — 工具/RAG/SIP/多方全是框架原生能力，不需要自己造 <small>(voice-agent 直连方案这些都要手写)</small></li>
+        <li><b>生态最活跃</b> — 六框架实测中社区、文档、商业支持（LiveKit Cloud）都是第一梯队</li>
+        <li><b>传输层专业</b> — WebRTC SFU 自带弱网对抗、自适应码率，浏览器/移动端/电话全端覆盖</li>
+        <li><b>延迟可接受</b> — ~514ms 在实时对话感知阈值内，且编排成本是一次性固定开销</li>
+        <li><b>模型解耦</b> — 百炼可平替 OpenAI Realtime，协议已打通（含 beta 协议踩坑经验）</li>
+        <li><b>可私有化</b> — 除模型外全栈本地，满足企业内网合规要求</li>
+      </ul>
+    </div>
+    <div class="card con">
+      <h3>劣势</h3>
+      <ul>
+        <li><b>延迟高于直连</b> — 比 voice-agent 直连百炼（~250ms）多 ~260ms 编排成本 <small>(追求极限延迟的演示场景直连仍最优)</small></li>
+        <li><b>组件多、运维面大</b> — 需维护 LiveKit Server + Agent Worker + Token 服务三个进程</li>
+        <li><b>百炼兼容有坑</b> — 插件必须锁 1.1.7（≥1.2 静默超时）、metadata 需打补丁，升级需重新验证</li>
+        <li><b>学习曲线</b> — 房间/轨道/job 分发概念比"开一个 WebSocket"复杂</li>
+        <li><b>不及管道方案灵活</b> — 若需逐字控制 STT/LLM/TTS 任意组合，Pipecat 管道更细粒度（但延迟 ~2.1s）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="no">3</span>与其他方案的差异 · 最大优势</h2>
+  <table>
+    <tr><th>对比对象</th><th>路线</th><th>实测延迟</th><th>关键差异</th><th>结论</th></tr>
+    <tr>
+      <td>voice-agent（现有）</td><td>浏览器直连百炼 WS</td><td>~250ms</td>
+      <td>无编排层，最快；但工具/RAG/SIP/多方都要手写，工程上限低</td>
+      <td>保留做轻量演示</td>
+    </tr>
+    <tr>
+      <td>TEN Framework</td><td>编排 + 图编排</td><td>—（可跑未深测）</td>
+      <td class="bad">强绑 Agora 生态、百炼支持薄、实测踩 20 个坑</td>
+      <td class="bad">不选</td>
+    </tr>
+    <tr>
+      <td>Pipecat</td><td>编排 + STT→LLM→TTS 管道</td><td>~2.1s</td>
+      <td class="bad">逐段可控但延迟超实时阈值，对话感明显"慢半拍"</td>
+      <td class="bad">不适合实时对话</td>
+    </tr>
+    <tr>
+      <td>FastRTC</td><td>直连 + Gradio 封装</td><td>~250ms 级</td>
+      <td>上手最快、UX 好（已借鉴其前端）；本质还是直连，工程能力同 voice-agent</td>
+      <td>前端灵感来源</td>
+    </tr>
+    <tr>
+      <td>Vocode</td><td>编排 + 管道</td><td>—</td>
+      <td class="bad">仓库 404，项目已死</td>
+      <td class="bad">排除</td>
+    </tr>
+    <tr>
+      <td class="best">LiveKit Agents（选定）</td><td class="best">编排 + realtime 一体模型</td><td class="best">~514ms</td>
+      <td class="best">延迟与能力的最佳平衡点</td>
+      <td class="best">工程化主线</td>
+    </tr>
+  </table>
+
+  <div class="hl">
+    <b>最大的差异化优势：LiveKit 是唯一把"实时传输层"和"Agent 编排层"做成一体的框架。</b><br>
+    别的方案里，WebRTC 传输（弱网对抗、多端适配、电话接入）要自己拼；Agent 编排（打断、工具、状态机）也要自己拼。
+    LiveKit 两边都是生产级现成的，中间用"房间/job 分发"模型天然咬合 —— 这让它成为唯一能平滑演进到
+    <b>双 LLM 终态架构</b>（flash 先出声 + 高推理模型补充）的底座：多模型混编、会话级状态、工具调度都在编排层原生就位，
+    而这正是"高推理能力 + 低延迟"这一核心需求的最终解法。
+  </div>
+</div>
+</body>
+</html>

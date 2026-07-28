@@ -1,0 +1,38 @@
+# 本目录只入库自研文件。
+# livekit-demo、pipecat-demo、fastrtc-demo/fastrtc、ten-demo/ten-framework、vocode-demo
+# 均为第三方开源仓库克隆（数百 MB，含各自 .git），不入库；venv/node_modules/.env 同理。
+# 白名单：只显式放开下列文件，其余全部忽略。
+*
+!.gitignore
+!README.md
+!start.bat
+!stop.bat
+
+# LiveKit demo（自研；livekit-demo 本体是 livekit-agents 上游克隆）
+!livekit-demo/
+!livekit-demo/minimal_agent.py
+!livekit-demo/token_server.py
+!livekit-demo/probe_dashscope.py
+!livekit-demo/probe_llm.py
+!livekit-demo/web/
+!livekit-demo/web/index.html
+!livekit-demo/web/architecture.html
+!livekit-demo/web/package.json
+
+# FastRTC demo（自研）
+!fastrtc-demo/
+!fastrtc-demo/echo_demo.py
+!fastrtc-demo/qwen_voice_chat.py
+!fastrtc-demo/test_qwen_realtime.py
+!fastrtc-demo/livekit_bridge_chat.py
+
+# Pipecat demo（自研）
+!pipecat-demo/
+!pipecat-demo/demo_local_bailian.py
+
+# TEN demo（自研验证脚本）
+!ten-demo/
+!ten-demo/mock_server.py
+!ten-demo/test_client.py
+!ten-demo/test_client_incontainer.py
+!ten-demo/run_demo.ps1
