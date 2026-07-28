@@ -1,0 +1,73 @@
+# 超脑语音助手 · 生产部署 compose
+# 用法见 deploy/README.md。启动前先生成密钥：python deploy/gen_keys.py
+
+name: chaonao-voice-agent
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.9
+    container_name: livekit-server-prod
+    command: --config /etc/livekit.yaml --node-ip ${SERVER_PUBLIC_IP}
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "7880:7880"          # WebSocket 信令
+      - "7881:7881"          # RTC over TCP（fallback）
+      - "3478:3478"          # TURN
+      - "3478:3478/udp"
+      - "50000-50100:50000-50100/udp"  # RTC media
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: ..
+      dockerfile: deploy/agent.Dockerfile
+    container_name: voice-agent-worker
+    environment:
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      AGENT_MODEL: ${AGENT_MODEL:-qwen3-omni-flash-realtime}
+      AGENT_VOICE: ${AGENT_VOICE:-Cherry}
+    volumes:
+      - ../../wiki:/wiki:ro   # query_today_tasks / search_wiki 读仓库 wiki
+    depends_on:
+      - livekit
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    container_name: voice-agent-web
+    environment:
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      # 浏览器看到的 LiveKit 地址（wss 经 Caddy 反代）
+      PUBLIC_LIVEKIT_URL: ${PUBLIC_LIVEKIT_URL:-ws://localhost:7880}
+      # /health 检查的容器内 LiveKit 地址
+      LIVEKIT_HOST: livekit
+      LIVEKIT_PORT: "7880"
+    depends_on:
+      - livekit
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: voice-agent-caddy
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+      - livekit
+    restart: unless-stopped
+
+volumes:
+  caddy_data:

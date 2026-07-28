@@ -1,0 +1,11 @@
+# Caddy 反代：自动 HTTPS。把 your-domain.example.com 换成真实域名。
+# 没域名时可先用 :80 纯 HTTP 调试（WebRTC 在非 localhost 下要求 HTTPS！正式必须域名）。
+
+your-domain.example.com {
+    # LiveKit WebSocket 信令
+    @livekit path /rtc
+    reverse_proxy @livekit livekit:7880
+
+    # Web 前端 + token 接口
+    reverse_proxy web:8899
+}

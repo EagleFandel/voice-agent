@@ -3,127 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LiveKit Agents 语音助手 Demo · 超脑</title>
+<title>超脑语音助手 · LiveKit Agents Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1a2332; --paper: #f7f4ed; --accent: #2563eb; --ok: #16a34a;
-    --muted: #6b7280; --line: #d8d3c8; --card: #fffdf8; --danger: #dc2626;
+    --ink: #000000;
+    --ink-soft: #4e4e4e;
+    --muted: #777169;
+    --paper: #ffffff;
+    --paper-dim: #f5f5f5;
+    --stone: #f5f2ef;
+    --stone-trans: rgba(245, 242, 239, 0.8);
+    --line: #e5e5e5;
+    --line-soft: rgba(0, 0, 0, 0.05);
+    --danger: #dc2626;
+    --ring: rgb(147 197 253 / 0.5);
+
+    /* ElevenLabs 多层亚 0.1 阴影栈 */
+    --sh-edge: rgba(0,0,0,0.075) 0px 0px 0px 0.5px inset;
+    --sh-card:
+      rgba(0,0,0,0.075) 0px 0px 0px 0.5px inset,
+      rgba(0,0,0,0.06) 0px 0px 0px 1px,
+      rgba(0,0,0,0.04) 0px 1px 2px,
+      rgba(0,0,0,0.04) 0px 2px 4px;
+    --sh-pop:
+      rgba(0,0,0,0.4) 0px 0px 1px,
+      rgba(0,0,0,0.04) 0px 4px 4px;
+    --sh-warm: rgba(78,50,23,0.04) 0px 6px 16px;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--paper); color: var(--ink); padding: 24px; }
-  .wrap { max-width: 860px; margin: 0 auto; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    letter-spacing: 0.16px;
+    line-height: 1.5;
+  }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-  .badge { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; }
-  .badge b { color: var(--accent); }
+  /* ===== 顶部细导航 ===== */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-in {
+    max-width: 1080px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: 0.15px; }
+  .brand span { color: var(--muted); font-weight: 400; }
+  .nav-links { display: flex; gap: 10px; }
+  .pill-link {
+    display: inline-flex; align-items: center;
+    font-size: 15px; font-weight: 500; letter-spacing: 0.15px;
+    color: var(--ink); text-decoration: none;
+    background: var(--paper);
+    padding: 8px 16px; border-radius: 9999px;
+    box-shadow: var(--sh-pop);
+    transition: transform .15s ease, box-shadow .2s ease;
+  }
+  .pill-link:hover { transform: translateY(-1px); }
+  .pill-link.dark { background: var(--ink); color: #fff; box-shadow: var(--sh-pop); }
 
-  .arch { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
-  .arch h2 { font-size: 14px; margin-bottom: 12px; color: var(--muted); font-weight: 600; }
-  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
-  .node { flex: 1; min-width: 130px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 10px; text-align: center; }
-  .node .t { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-  .node .d { font-size: 11px; color: var(--muted); line-height: 1.4; }
-  .arrow { display: flex; align-items: center; padding: 0 8px; color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .arrow small { display: block; font-weight: 400; color: var(--muted); text-align: center; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
 
-  /* ===== FastRTC 风格通话面板 ===== */
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 28px 20px 20px; text-align: center; }
+  /* ===== Hero ===== */
+  .hero { text-align: center; padding: 72px 0 8px; }
+  .hero h1 {
+    font-size: 48px; font-weight: 300; line-height: 1.08;
+    letter-spacing: -0.96px; color: var(--ink);
+  }
+  .hero .sub {
+    margin: 18px auto 0; max-width: 560px;
+    font-size: 18px; font-weight: 400; line-height: 1.6;
+    letter-spacing: 0.18px; color: var(--ink-soft);
+  }
 
-  .call-stage { position: relative; width: 148px; height: 148px; margin: 0 auto 6px; }
+  /* ===== 徽章 ===== */
+  .badges {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin: 36px auto 0; max-width: 860px;
+  }
+  .badge {
+    background: var(--paper);
+    border-radius: 9999px;
+    padding: 7px 14px;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.14px;
+    color: var(--ink-soft);
+    box-shadow: var(--sh-card);
+  }
+  .badge b { color: var(--ink); font-weight: 600; }
+
+  /* ===== 通话面板（Hero 大圆球） ===== */
+  .panel {
+    margin: 48px auto 0; max-width: 720px;
+    background: var(--paper);
+    border-radius: 24px;
+    box-shadow: var(--sh-card);
+    padding: 56px 32px 32px;
+    text-align: center;
+  }
+
+  .call-stage { position: relative; width: 168px; height: 168px; margin: 0 auto; }
   .pulse-ring {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 100%; height: 100%; border-radius: 50%;
-    background: var(--accent);
+    background: var(--ink);
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     opacity: 0; pointer-events: none;
   }
   @keyframes pulse {
-    0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.45; }
+    0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.28; }
     100% { transform: translate(-50%, -50%) scale(var(--max-scale, 2.2)); opacity: 0; }
   }
   .call-core {
     position: absolute; inset: 0; border-radius: 50%;
-    background: var(--accent); color: #fff;
+    background: var(--ink); color: #fff;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; cursor: pointer; border: none; z-index: 2;
-    transition: transform .1s ease, background .3s;
+    gap: 8px; cursor: pointer; border: none; z-index: 2;
+    transition: transform .1s ease, background .3s, box-shadow .2s ease;
     font-family: inherit;
+    box-shadow: var(--sh-pop);
   }
-  .call-core .icon { font-size: 38px; line-height: 1; }
-  .call-core .label { font-size: 13px; font-weight: 600; }
-  .call-core:hover { filter: brightness(1.08); }
+  .call-core:hover { box-shadow: var(--sh-pop), var(--sh-warm); }
+  .call-core .icon { font-size: 40px; line-height: 1; transition: transform .2s; }
+  .call-core .label { font-size: 14px; font-weight: 500; letter-spacing: 0.14px; }
   .call-core.live { background: var(--danger); }
   .call-core.connecting { background: var(--muted); cursor: default; }
-  .call-core .icon { transition: transform .2s; }
 
-  /* 通话中控制条：静音 / 挂断 */
-  .call-controls { display: none; justify-content: center; gap: 14px; margin-top: 14px; }
+  /* Canvas 波形条（ElevenLabs 签名元素） */
+  #wave {
+    display: none;
+    margin: 28px auto 0;
+    width: 100%; max-width: 480px; height: 56px;
+  }
+  #wave.show { display: block; }
+
+  /* 通话中控制条：静音 */
+  .call-controls { display: none; justify-content: center; gap: 14px; margin-top: 24px; }
   .call-controls.show { display: flex; }
   .ctl-btn {
-    width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line);
-    background: #fff; font-size: 22px; cursor: pointer;
+    width: 56px; height: 56px; border-radius: 50%; border: none;
+    background: var(--paper); font-size: 22px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: background .2s, border-color .2s;
+    box-shadow: var(--sh-card);
+    transition: transform .15s ease, background .2s;
   }
-  .ctl-btn:hover { background: #f1ede3; }
-  .ctl-btn.muted { background: #fde8e8; border-color: #fca5a5; }
-  .ctl-btn .mini { display: block; font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .ctl-btn:hover { transform: translateY(-1px); background: var(--stone); }
+  .ctl-btn.muted { background: #fde8e8; }
 
-  #status { margin-top: 14px; font-size: 13px; color: var(--muted); }
-  #status.ok { color: var(--ok); font-weight: 600; }
+  #status { margin-top: 24px; font-size: 14px; letter-spacing: 0.14px; color: var(--muted); }
+  #status.ok { color: var(--ink); font-weight: 500; }
 
-  /* 字幕区 */
-  #subtitles { margin: 14px auto 0; max-width: 520px; max-height: 200px; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+  /* 字幕区：聊天气泡 */
+  #subtitles {
+    margin: 20px auto 0; max-width: 520px; max-height: 220px;
+    overflow-y: auto; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
   #subtitles:empty { display: none; }
-  .msg { border-radius: 10px; padding: 7px 12px; font-size: 13px; line-height: 1.5; max-width: 85%; }
-  .msg .who { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-  .msg.assistant { background: #eef2ff; border: 1px solid #c7d2fe; align-self: flex-start; }
-  .msg.user { background: #f0fdf4; border: 1px solid #bbf7d0; align-self: flex-end; text-align: right; }
+  .msg {
+    border-radius: 16px; padding: 9px 14px;
+    font-size: 14px; line-height: 1.5; letter-spacing: 0.14px;
+    max-width: 85%; color: var(--ink);
+  }
+  .msg .who { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 3px; }
+  .msg.assistant { background: var(--stone); align-self: flex-start; box-shadow: var(--sh-edge); }
+  .msg.user { background: var(--paper); box-shadow: var(--sh-card); align-self: flex-end; text-align: right; }
+  .msg.user .who { text-align: right; }
 
-  .meter { margin: 12px auto 0; width: 260px; height: 8px; background: #e5e1d8; border-radius: 4px; overflow: hidden; }
-  .meter > div { height: 100%; width: 0%; background: var(--ok); transition: width .1s; }
-  .meter-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .meter {
+    margin: 20px auto 0; width: 260px; height: 6px;
+    background: var(--paper-dim); border-radius: 9999px; overflow: hidden;
+    box-shadow: var(--sh-edge);
+  }
+  .meter > div { height: 100%; width: 0%; background: var(--ink); border-radius: 9999px; transition: width .1s; }
+  .meter-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 6px; letter-spacing: 0.14px; }
 
-  #log { margin-top: 16px; text-align: left; font-size: 12px; color: var(--muted); max-height: 140px; overflow-y: auto; border-top: 1px dashed var(--line); padding-top: 10px; }
+  /* 日志折叠 */
+  .logwrap { margin-top: 24px; text-align: left; }
+  .logwrap summary {
+    cursor: pointer; list-style: none;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.14px; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 9999px;
+    transition: background .2s;
+  }
+  .logwrap summary::-webkit-details-marker { display: none; }
+  .logwrap summary::before { content: '▸'; transition: transform .2s; }
+  .logwrap details[open] summary::before { transform: rotate(90deg); }
+  .logwrap summary:hover { background: var(--stone); }
+  #log {
+    margin-top: 10px; font-size: 12px; color: var(--muted);
+    max-height: 160px; overflow-y: auto;
+    border-top: 1px solid var(--line-soft); padding-top: 10px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    letter-spacing: 0;
+  }
   #log div { padding: 2px 0; }
 
-  .notes { margin-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.7; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .notes b { color: var(--ink); }
+  /* ===== 架构区 ===== */
+  .section { margin-top: 72px; }
+  .section h2 {
+    font-size: 36px; font-weight: 300; line-height: 1.17;
+    letter-spacing: normal; color: var(--ink);
+    text-align: center; margin-bottom: 8px;
+  }
+  .section .lede {
+    text-align: center; font-size: 16px; color: var(--ink-soft);
+    letter-spacing: 0.16px; margin-bottom: 32px;
+  }
+  .arch {
+    background: var(--paper); border-radius: 24px;
+    box-shadow: var(--sh-card); padding: 32px;
+  }
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .node {
+    flex: 1; min-width: 150px;
+    background: var(--stone); border-radius: 16px;
+    padding: 18px 14px; text-align: center;
+    box-shadow: var(--sh-edge);
+  }
+  .node .t { font-size: 14px; font-weight: 600; letter-spacing: 0.14px; margin-bottom: 4px; }
+  .node .d { font-size: 12px; color: var(--muted); line-height: 1.5; letter-spacing: 0.14px; }
+  .arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0 12px; color: var(--ink);
+    font-size: 12px; font-weight: 600; white-space: nowrap; letter-spacing: 0.14px;
+  }
+  .arrow small { font-weight: 400; color: var(--muted); text-align: center; }
+
+  /* ===== 底部 notes ===== */
+  .notes {
+    margin-top: 72px;
+    background: var(--stone-trans); border-radius: 24px;
+    box-shadow: var(--sh-warm), var(--sh-edge);
+    padding: 32px 36px;
+    font-size: 14px; color: var(--ink-soft); line-height: 1.7; letter-spacing: 0.16px;
+  }
+  .notes h2 { font-size: 24px; font-weight: 300; color: var(--ink); margin-bottom: 16px; }
+  .notes p { margin-bottom: 12px; }
+  .notes p:last-child { margin-bottom: 0; }
+  .notes b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    margin-top: 48px; text-align: center;
+    font-size: 12px; color: var(--muted); letter-spacing: 0.14px;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 1024px) {
+    .hero { padding: 56px 0 4px; }
+    .hero h1 { font-size: 36px; }
+    .section h2 { font-size: 28px; }
+    .flow { flex-direction: column; }
+    .arrow { padding: 10px 0; }
+    .node { min-width: 0; }
+  }
+  @media (max-width: 640px) {
+    .nav-in { padding: 12px 16px; }
+    .brand span { display: none; }
+    .pill-link { font-size: 13px; padding: 7px 12px; }
+    .wrap { padding: 0 16px 64px; }
+    .hero h1 { font-size: 30px; letter-spacing: -0.5px; }
+    .hero .sub { font-size: 16px; }
+    .panel { padding: 40px 20px 24px; }
+    .arch, .notes { padding: 24px 20px; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>LiveKit Agents 语音助手 Demo</h1>
-  <div class="sub">编排框架 + Realtime 一体模型路线 · 横向对比实测 · 2026-07-27 · 通话交互参考 FastRTC</div>
 
-  <div class="badges">
-    <span class="badge">框架 <b>LiveKit Agents 1.1.7</b></span>
-    <span class="badge">传输 <b>WebRTC（本地 LiveKit Server）</b></span>
-    <span class="badge">模型 <b>百炼 qwen3-omni-flash-realtime</b></span>
-    <span class="badge">VAD <b>Silero（本地）+ server_vad</b></span>
-    <span class="badge">打断 <b>支持 barge-in</b></span>
-    <span class="badge">工具调用 <b>query_today_tasks（读 wiki 待办）</b></span>
-    <span class="badge">实测首音频延迟 <b>~514ms</b></span>
-    <span class="badge">前端交互 <b>FastRTC 风格（脉冲通话球）</b></span>
-  </div>
-
-  <div class="arch">
-    <h2>架构：浏览器 → WebRTC → LiveKit Server → Agent Worker → 百炼 Realtime</h2>
-    <div class="flow">
-      <div class="node"><div class="t">浏览器（本页）</div><div class="d">livekit-client JS SDK<br>麦克风采集 / 播放</div></div>
-      <div class="arrow">WebRTC<small>低延迟音频轨</small></div>
-      <div class="node"><div class="t">LiveKit Server</div><div class="d">SFU 传输层<br>Docker 本地运行</div></div>
-      <div class="arrow">房间事件<small>job 分发</small></div>
-      <div class="node"><div class="t">Agent Worker</div><div class="d">Python · livekit-agents<br>VAD / 打断 / 会话编排</div></div>
-      <div class="arrow">WebSocket<small>Realtime 协议</small></div>
-      <div class="node"><div class="t">百炼 Realtime</div><div class="d">qwen3-omni-flash<br>STT+LLM+TTS 一体</div></div>
+<nav class="nav">
+  <div class="nav-in">
+    <div class="brand">超脑语音助手 <span>· LiveKit Agents Demo</span></div>
+    <div class="nav-links">
+      <a class="pill-link" href="/architecture.html">架构分析</a>
+      <a class="pill-link dark" href="http://localhost:7860" target="_blank" rel="noopener">FastRTC 版</a>
     </div>
   </div>
+</nav>
 
-  <div class="panel">
+<div class="wrap">
+
+  <header class="hero">
+    <h1>编排框架 + Realtime 一体模型</h1>
+    <p class="sub">LiveKit Agents 语音助手 · 横向对比实测 · 2026-07-27 · 通话交互参考 FastRTC</p>
+
+    <div class="badges">
+      <span class="badge">框架 <b>LiveKit Agents 1.1.7</b></span>
+      <span class="badge">传输 <b>WebRTC（本地 LiveKit Server）</b></span>
+      <span class="badge">模型 <b>百炼 qwen3-omni-flash-realtime</b></span>
+      <span class="badge">VAD <b>Silero（本地）+ server_vad</b></span>
+      <span class="badge">打断 <b>支持 barge-in</b></span>
+      <span class="badge">工具调用 <b>query_today_tasks（读 wiki 待办）</b></span>
+      <span class="badge">实测首音频延迟 <b>~514ms</b></span>
+      <span class="badge">前端交互 <b>FastRTC 风格（脉冲通话球）</b></span>
+    </div>
+  </header>
+
+  <section class="panel">
     <!-- FastRTC 风格：居中大圆球，音频驱动脉冲 -->
     <div class="call-stage" id="callStage">
       <div class="pulse-ring" style="animation-delay: 0s"></div>
@@ -135,6 +321,9 @@
       </button>
     </div>
 
+    <!-- ElevenLabs 签名波形条：通话中实时渲染麦克风频谱 -->
+    <canvas id="wave"></canvas>
+
     <div class="call-controls" id="callControls">
       <button class="ctl-btn" id="muteBtn" title="静音 / 取消静音">🎙️</button>
     </div>
@@ -143,17 +332,41 @@
     <div id="subtitles"></div>
     <div class="meter"><div id="meterBar"></div></div>
     <div class="meter-label">麦克风音量</div>
-    <div id="log"></div>
-  </div>
 
-  <div class="notes">
-    <b>对比定位：</b>本 demo 是「编排框架 + realtime 一体模型」路线，与现有 voice-agent（浏览器直连百炼 WS，~250ms）对比。
-    多花 ~260ms 编排成本，换来工具调用 / 知识库 RAG / 多模型混编 / 电话 SIP 接入的一等公民能力。<br>
-    <b>前端交互：</b>通话面板借鉴 FastRTC 的电话式 UX —— 大圆球随说话音量呼吸缩放、三层脉冲波纹、静音按钮；数据通道仍是 LiveKit WebRTC。<br>
-    <b>已知兼容处理：</b>livekit 插件锁定 1.1.7（≥1.2 发 OpenAI GA 协议，百炼兼容端点仅支持 beta，会静默超时）；
-    百炼不回显 response.metadata，已打关联回退补丁。<br>
-    <b>玩法：</b>点大圆球开始通话，授权麦克风后直接说话；助手说话时可以插话测试打断，🎙️ 按钮可静音。
-  </div>
+    <div class="logwrap">
+      <details>
+        <summary>连接日志</summary>
+        <div id="log"></div>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>架构</h2>
+    <p class="lede">浏览器 → WebRTC → LiveKit Server → Agent Worker → 百炼 Realtime</p>
+    <div class="arch">
+      <div class="flow">
+        <div class="node"><div class="t">浏览器（本页）</div><div class="d">livekit-client JS SDK<br>麦克风采集 / 播放</div></div>
+        <div class="arrow">WebRTC<small>低延迟音频轨</small></div>
+        <div class="node"><div class="t">LiveKit Server</div><div class="d">SFU 传输层<br>Docker 本地运行</div></div>
+        <div class="arrow">房间事件<small>job 分发</small></div>
+        <div class="node"><div class="t">Agent Worker</div><div class="d">Python · livekit-agents<br>VAD / 打断 / 会话编排</div></div>
+        <div class="arrow">WebSocket<small>Realtime 协议</small></div>
+        <div class="node"><div class="t">百炼 Realtime</div><div class="d">qwen3-omni-flash<br>STT+LLM+TTS 一体</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>说明</h2>
+    <p><b>对比定位：</b>本 demo 是「编排框架 + realtime 一体模型」路线，与现有 voice-agent（浏览器直连百炼 WS，~250ms）对比。多花 ~260ms 编排成本，换来工具调用 / 知识库 RAG / 多模型混编 / 电话 SIP 接入的一等公民能力。</p>
+    <p><b>前端交互：</b>通话面板借鉴 FastRTC 的电话式 UX —— 大圆球随说话音量呼吸缩放、三层脉冲波纹、静音按钮；数据通道仍是 LiveKit WebRTC。</p>
+    <p><b>已知兼容处理：</b>livekit 插件锁定 1.1.7（≥1.2 发 OpenAI GA 协议，百炼兼容端点仅支持 beta，会静默超时）；百炼不回显 response.metadata，已打关联回退补丁。</p>
+    <p><b>玩法：</b>点大圆球开始通话，授权麦克风后直接说话；助手说话时可以插话测试打断，🎙️ 按钮可静音。</p>
+  </section>
+
+  <footer>超脑 · 语音 Agent 框架横向对比 · LiveKit 路线实测</footer>
+
 </div>
 
 <script src="/node_modules/livekit-client/dist/livekit-client.umd.js"></script>
@@ -167,6 +380,8 @@ const muteBtn = document.getElementById('muteBtn');
 const statusEl = document.getElementById('status');
 const logEl = document.getElementById('log');
 const meterBar = document.getElementById('meterBar');
+const waveEl = document.getElementById('wave');
+const waveCtx = waveEl.getContext('2d');
 let room = null, audioCtx = null, analyser = null, meterRAF = null;
 let muted = false, freqBuf = null;
 let manualHangup = false, retryCount = 0, retryTimer = null;
@@ -213,6 +428,37 @@ function log(msg) {
   logEl.prepend(d);
 }
 
+/* ElevenLabs 签名波形：复用 analyser 频域数据，~40 根圆角柱条 */
+function drawWave() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = waveEl.clientWidth, h = waveEl.clientHeight;
+  if (waveEl.width !== w * dpr || waveEl.height !== h * dpr) {
+    waveEl.width = w * dpr;
+    waveEl.height = h * dpr;
+  }
+  waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  waveCtx.clearRect(0, 0, w, h);
+  const BARS = 40;
+  const gap = 4;
+  const barW = (w - gap * (BARS - 1)) / BARS;
+  const step = Math.max(1, Math.floor(freqBuf.length / BARS));
+  for (let i = 0; i < BARS; i++) {
+    const v = freqBuf[Math.min(freqBuf.length - 1, i * step)] / 255;
+    const bh = Math.max(3, v * h);
+    const x = i * (barW + gap);
+    const y = (h - bh) / 2;
+    const r = Math.min(barW / 2, bh / 2);
+    waveCtx.fillStyle = v > 0.04 ? '#000000' : '#d8d3c8';
+    waveCtx.beginPath();
+    if (waveCtx.roundRect) {
+      waveCtx.roundRect(x, y, barW, bh, r);
+    } else {
+      waveCtx.rect(x, y, barW, bh);
+    }
+    waveCtx.fill();
+  }
+}
+
 /* FastRTC PulsingIcon 同款逻辑：
    AnalyserNode(fftSize=64, smoothing=0.8) 取频域均值 → 圆球缩放 + 波纹透明度 */
 function startPulse(stream) {
@@ -224,6 +470,7 @@ function startPulse(stream) {
   src.connect(analyser);
   freqBuf = new Uint8Array(analyser.frequencyBinCount);
   const timeBuf = new Uint8Array(analyser.frequencyBinCount);
+  waveEl.classList.add('show');
   (function tick() {
     analyser.getByteFrequencyData(freqBuf);
     const avg = freqBuf.reduce((a, b) => a + b, 0) / freqBuf.length / 255;
@@ -234,6 +481,8 @@ function startPulse(stream) {
       r.style.setProperty('--max-scale', (1 + avg * 6).toFixed(2));
       r.style.opacity = avg > 0.02 ? '' : '0';
     });
+    // ElevenLabs 波形条（频域柱条）
+    drawWave();
     // 底部电平条（时域峰值）
     analyser.getByteTimeDomainData(timeBuf);
     let peak = 0;
@@ -250,6 +499,8 @@ function stopPulse() {
   core.style.transform = '';
   rings.forEach(r => { r.style.opacity = '0'; });
   meterBar.style.width = '0%';
+  waveEl.classList.remove('show');
+  waveCtx.clearRect(0, 0, waveEl.width, waveEl.height);
 }
 
 function setCallState(state) {
