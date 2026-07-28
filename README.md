@@ -6,6 +6,45 @@
 
 「编排框架 + Realtime 一体模型」路线的可运行 demo：浏览器语音 → WebRTC → 本地 LiveKit Server → Agent Worker（livekit-agents + Silero VAD）→ 阿里百炼 qwen3-omni-flash-realtime（STT+LLM+TTS 一体）。支持全双工对话、插话打断（barge-in），实测首音频延迟 ~514ms。
 
+## 框架能力清单
+
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| 全双工语音对话 | ✅ 已实测 | server_vad + Silero 本地 VAD |
+| 插话打断 barge-in | ✅ 已实测 | Agent 侧 VAD 处理 |
+| 工具调用 function calling | ✅ 已接入 | 示例工具 `query_today_tasks`（读 `wiki/daily-tasks.md` 今日待办），问"我今天有什么待办"即可触发 |
+| 会话状态推送 | ✅ 已接入 | listening/thinking/speaking 经 data channel 到前端实时显示 |
+| 对话字幕 | ⚠️ 预留 | 前端与 data channel 已就绪；**百炼 realtime 不回传文本转写**，换 OpenAI Realtime 后自动生效 |
+| 断线自动重连 | ✅ 已接入 | 前端最多自动重试 3 次（手动挂断不触发） |
+| 双前端 | ✅ | 8899 手写脉冲球 / 7860 FastRTC 原版 UI |
+| RAG / 双 LLM / SIP | ⬜ 未做 | 框架支持，待目标场景对齐后决定 |
+
+## 配置项（环境变量）
+
+在 `livekit-demo/.env` 中覆盖，不改代码：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `DASHSCOPE_API_KEY` | （必填） | 百炼 API key |
+| `AGENT_MODEL` | `qwen3-omni-flash-realtime` | realtime 模型 |
+| `AGENT_VOICE` | `Cherry` | 音色 |
+| `AGENT_INSTRUCTIONS` | 小超人设 | 系统指令 |
+| `DASHSCOPE_BASE_URL` | 百炼 api-ws | 换 OpenAI Realtime 时改这里+模型 |
+
+## 如何给助手加新工具
+
+`minimal_agent.py` 里照 `query_today_tasks` 的样子写：
+
+```python
+@function_tool
+async def my_tool(param: str) -> str:
+    """工具描述（模型据此决定何时调用）。参数写清楚。"""
+    return "结果文本（模型会把它读给用户听）"
+```
+
+然后把 `my_tool` 加进 `MyAgent.__init__` 的 `tools=[...]` 列表，重启 agent worker 即可。工具返回值会被模型转成口语播报。
+
+
 ## 快速开始
 
 **前置条件**（仅首次）：

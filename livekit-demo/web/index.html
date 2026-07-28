@@ -75,6 +75,14 @@
   #status { margin-top: 14px; font-size: 13px; color: var(--muted); }
   #status.ok { color: var(--ok); font-weight: 600; }
 
+  /* 字幕区 */
+  #subtitles { margin: 14px auto 0; max-width: 520px; max-height: 200px; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+  #subtitles:empty { display: none; }
+  .msg { border-radius: 10px; padding: 7px 12px; font-size: 13px; line-height: 1.5; max-width: 85%; }
+  .msg .who { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+  .msg.assistant { background: #eef2ff; border: 1px solid #c7d2fe; align-self: flex-start; }
+  .msg.user { background: #f0fdf4; border: 1px solid #bbf7d0; align-self: flex-end; text-align: right; }
+
   .meter { margin: 12px auto 0; width: 260px; height: 8px; background: #e5e1d8; border-radius: 4px; overflow: hidden; }
   .meter > div { height: 100%; width: 0%; background: var(--ok); transition: width .1s; }
   .meter-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
@@ -97,6 +105,7 @@
     <span class="badge">模型 <b>百炼 qwen3-omni-flash-realtime</b></span>
     <span class="badge">VAD <b>Silero（本地）+ server_vad</b></span>
     <span class="badge">打断 <b>支持 barge-in</b></span>
+    <span class="badge">工具调用 <b>query_today_tasks（读 wiki 待办）</b></span>
     <span class="badge">实测首音频延迟 <b>~514ms</b></span>
     <span class="badge">前端交互 <b>FastRTC 风格（脉冲通话球）</b></span>
   </div>
@@ -131,6 +140,7 @@
     </div>
 
     <div id="status">未连接</div>
+    <div id="subtitles"></div>
     <div class="meter"><div id="meterBar"></div></div>
     <div class="meter-label">麦克风音量</div>
     <div id="log"></div>
@@ -159,6 +169,43 @@ const logEl = document.getElementById('log');
 const meterBar = document.getElementById('meterBar');
 let room = null, audioCtx = null, analyser = null, meterRAF = null;
 let muted = false, freqBuf = null;
+let manualHangup = false, retryCount = 0, retryTimer = null;
+const subsEl = document.getElementById('subtitles');
+const decoder = new TextDecoder();
+
+const STATE_TEXT = {
+  listening: '聆听中…',
+  thinking: '思考中…',
+  speaking: '小超说话中（可直接插话打断）',
+  idle: '待机',
+  initializing: '初始化…',
+};
+
+function addSubtitle(role, text) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + role;
+  const who = document.createElement('span');
+  who.className = 'who';
+  who.textContent = role === 'user' ? '我' : '小超';
+  d.appendChild(who);
+  d.appendChild(document.createTextNode(text));
+  subsEl.appendChild(d);
+  subsEl.scrollTop = subsEl.scrollHeight;
+}
+
+function handleAgentData(payload) {
+  let msg;
+  try { msg = JSON.parse(decoder.decode(payload)); } catch { return; }
+  if (msg.type === 'agent_state') {
+    statusEl.textContent = STATE_TEXT[msg.state] || msg.state;
+    statusEl.className = 'ok';
+  } else if (msg.type === 'user_state' && msg.state === 'speaking') {
+    statusEl.textContent = '听到你说话了…';
+    statusEl.className = 'ok';
+  } else if (msg.type === 'transcript' && msg.text) {
+    addSubtitle(msg.role === 'user' ? 'user' : 'assistant', msg.text);
+  }
+}
 
 function log(msg) {
   const d = document.createElement('div');
@@ -250,12 +297,21 @@ async function connect() {
       statusEl.textContent = '助手已加入 · 对话中（可直接插话打断）';
       statusEl.className = 'ok';
     });
+    room.on(LivekitClient.RoomEvent.DataReceived, (payload) => handleAgentData(payload));
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
-      statusEl.textContent = '已断开';
-      statusEl.className = '';
       stopPulse();
       setCallState('idle');
       room = null;
+      if (!manualHangup && retryCount < 3) {
+        retryCount++;
+        statusEl.textContent = `连接断开，${2 * retryCount} 秒后自动重连（第 ${retryCount} 次）…`;
+        statusEl.className = '';
+        log('连接断开，自动重连中…');
+        retryTimer = setTimeout(() => connect(), 2000 * retryCount);
+      } else {
+        statusEl.textContent = manualHangup ? '已断开' : '连接断开（重连失败，请手动点击开始通话）';
+        statusEl.className = '';
+      }
     });
 
     await room.connect(url, token);
@@ -270,6 +326,7 @@ async function connect() {
 
     statusEl.textContent = '已连接 · 等待助手加入（Agent Worker 会自动进入房间）';
     statusEl.className = 'ok';
+    retryCount = 0;
     setCallState('live');
   } catch (e) {
     statusEl.textContent = '连接失败: ' + e.message;
@@ -280,7 +337,8 @@ async function connect() {
 
 core.addEventListener('click', () => {
   if (core.classList.contains('connecting')) return;
-  if (room) { room.disconnect(); } else { connect(); }
+  if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+  if (room) { manualHangup = true; room.disconnect(); } else { manualHangup = false; retryCount = 0; connect(); }
 });
 
 muteBtn.addEventListener('click', async () => {
