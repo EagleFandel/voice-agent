@@ -12,12 +12,14 @@
 |---|---|---|
 | 全双工语音对话 | ✅ 已实测 | server_vad + Silero 本地 VAD |
 | 插话打断 barge-in | ✅ 已实测 | Agent 侧 VAD 处理 |
-| 工具调用 function calling | ✅ 已接入 | 示例工具 `query_today_tasks`（读 `wiki/daily-tasks.md` 今日待办），问"我今天有什么待办"即可触发 |
+| 工具调用 function calling | ✅ 已接入 | 三个示例工具：`query_today_tasks`（读 `wiki/daily-tasks.md` 今日待办）、`search_wiki`、`deep_think` |
 | 会话状态推送 | ✅ 已接入 | listening/thinking/speaking 经 data channel 到前端实时显示 |
 | 对话字幕 | ⚠️ 预留 | 前端与 data channel 已就绪；**百炼 realtime 不回传文本转写**，换 OpenAI Realtime 后自动生效 |
 | 断线自动重连 | ✅ 已接入 | 前端最多自动重试 3 次（手动挂断不触发） |
 | 双前端 | ✅ | 8899 手写脉冲球 / 7860 FastRTC 原版 UI |
-| RAG / 双 LLM / SIP | ⬜ 未做 | 框架支持，待目标场景对齐后决定 |
+| RAG（wiki 检索） | ✅ 已接入 | `search_wiki`：百炼 text-embedding-v3 向量检索整个 `wiki/`，网络异常降级关键词匹配。问"wiki 里关于 X 怎么说的"触发 |
+| 双 LLM（快答+深思） | ✅ 已接入 | `deep_think`：深度问题转发 qwen3-max（404 降级 qwen-plus），演示双 LLM 概念。说"深入想想…"触发 |
+| SIP 电话接入 | ⬜ 未做 | 框架支持（LiveKit SIP），待目标场景对齐后决定 |
 
 ## 配置项（环境变量）
 
@@ -80,6 +82,8 @@ async def my_tool(param: str) -> str:
 - **连不上 / 提示 pc connection**：确认 Docker 容器是用 `--node-ip 127.0.0.1` 起的（start.bat 已处理）。
 - **Agent 不加入房间**：LiveKit 只在房间**创建**时分发 agent；前端已用随机房间名，正常不会遇到。
 - **本机代理坑**：Clash 关闭后残留的 HTTP_PROXY 环境变量会导致连接失败，start.bat 已自动清空。
+- **search_wiki 首次很慢？**：首次构建 embedding 索引要批量请求百炼（分钟级，已加 8 路并发）。构建成功后写入 `livekit-demo/.wiki_index_cache.pkl`，之后进程重启秒级命中；wiki 文件有改动会自动重建。agent 进房后也会后台预热，正常对话时无感。
+- **全链路体检**：`livekit-demo\venv\Scripts\python.exe livekit-demo\healthcheck.py`（docker/端口/token/agent/data channel 五项检查）。
 
 ## 已知兼容处理（给工程师）
 

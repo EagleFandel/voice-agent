@@ -14,7 +14,15 @@
 !livekit-demo/token_server.py
 !livekit-demo/probe_dashscope.py
 !livekit-demo/probe_llm.py
-!livekit-demo/probe_room.py
+!livekit-demo/healthcheck.py
+
+# 部署包与设计规范
+!deploy/
+!deploy/**
+!design-md/
+!design-md/**
+# 但部署密钥绝不入库（覆盖上面的 !deploy/**）
+deploy/.env
 !livekit-demo/web/
 !livekit-demo/web/index.html
 !livekit-demo/web/architecture.html
