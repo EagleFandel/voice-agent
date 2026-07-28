@@ -3,258 +3,211 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LiveKit 语音助手 · 系统架构与选型分析</title>
+<title>架构 · 超脑语音助手</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #000000;
-    --body: #4e4e4e;
-    --muted: #777169;
-    --paper: #ffffff;
-    --paper-2: #f5f5f5;
-    --stone: #f5f2ef;
-    --stone-t: rgba(245, 242, 239, 0.8);
-    --line: #e5e5e5;
-    --line-soft: rgba(0, 0, 0, 0.05);
-    --focus: #2563eb;
-    --focus-soft: rgb(147 197 253 / 0.5);
-    --graph: #4e4e4e;
-
-    /* ElevenLabs multi-layer sub-0.1 shadow stacks */
-    --sh-card:
-      rgba(0,0,0,0.075) 0px 0px 0px 0.5px inset,
-      rgba(0,0,0,0.06) 0px 0px 0px 1px,
-      rgba(0,0,0,0.04) 0px 1px 2px,
-      rgba(0,0,0,0.04) 0px 2px 4px;
-    --sh-lift:
-      rgba(0,0,0,0.4) 0px 0px 1px,
-      rgba(0,0,0,0.04) 0px 4px 4px;
-    --sh-warm: rgba(78,50,23,0.04) 0px 6px 16px;
+    --bg: #0a0a0d;
+    --bg-2: rgba(255,255,255,0.04);
+    --line: rgba(255,255,255,0.10);
+    --txt: rgba(255,255,255,0.92);
+    --txt-2: rgba(255,255,255,0.62);
+    --txt-3: rgba(255,255,255,0.38);
+    --accent: #8ea2ff;
+    --accent-dim: rgba(142,162,255,0.15);
+    --orb-lo: #8ea2ff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
   body {
-    font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--paper);
-    color: var(--ink);
-    letter-spacing: 0.16px;
-    -webkit-font-smoothing: antialiased;
+    font-family: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--txt);
   }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 50% at 50% 18%, rgba(96,118,255,0.10), transparent 60%);
+  }
+  :focus-visible { outline: 2px solid rgba(255,255,255,0.4); outline-offset: 3px; }
+  ::selection { background: rgba(142,162,255,0.30); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
 
-  /* ===== 顶部细导航 ===== */
+  /* ===== nav ===== */
   .nav {
     position: sticky; top: 0; z-index: 50;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: saturate(180%) blur(12px);
-    border-bottom: 1px solid var(--line-soft);
+    background: rgba(10,10,13,0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
   }
   .nav-in {
-    max-width: 1080px; margin: 0 auto; padding: 0 24px;
-    height: 56px; display: flex; align-items: center; justify-content: space-between;
+    max-width: 960px; margin: 0 auto; padding: 0 28px; height: 58px;
+    display: flex; align-items: center; justify-content: space-between;
   }
-  .nav-brand { font-size: 15px; font-weight: 500; letter-spacing: 0.15px; display: flex; align-items: center; gap: 10px; }
-  .nav-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
-  .nav-link {
-    font-size: 15px; font-weight: 500; letter-spacing: 0.15px;
-    color: var(--ink); text-decoration: none;
-    background: var(--stone-t); border-radius: 9999px;
-    padding: 8px 16px; box-shadow: var(--sh-warm);
-    transition: filter .2s ease;
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+  .brand .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, #fff, #e6ebff 45%, var(--orb-lo));
+    box-shadow: 0 0 10px rgba(142,162,255,0.45);
   }
-  .nav-link:hover { filter: brightness(0.97); }
+  .nav-links { display: flex; align-items: center; gap: 22px; }
+  .nav-links a { font-size: 13.5px; font-weight: 500; color: var(--txt-2); transition: color .15s; }
+  .nav-links a:hover { color: var(--txt); text-decoration: none; }
 
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 28px 96px; }
 
-  /* ===== Hero ===== */
-  .hero { padding: 72px 0 40px; }
-  .eyebrow {
+  /* ===== hero ===== */
+  header { padding: 76px 0 40px; text-align: center; }
+  header .eyebrow {
     display: inline-flex; align-items: center; gap: 8px;
-    font-size: 13px; font-weight: 500; color: var(--muted);
-    background: var(--paper); border-radius: 9999px; padding: 6px 14px;
-    box-shadow: var(--sh-card); margin-bottom: 24px;
+    font-size: 12px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--txt-3); margin-bottom: 18px;
   }
-  .eyebrow .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--focus); }
+  header .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
   h1 {
-    font-size: clamp(34px, 5vw, 52px); font-weight: 300;
-    line-height: 1.08; letter-spacing: -0.96px; color: var(--ink);
+    font-size: clamp(34px, 5vw, 50px); font-weight: 300; line-height: 1.12;
+    letter-spacing: -0.02em; text-align: center;
   }
-  .hero .sub {
-    margin-top: 18px; font-size: 18px; font-weight: 400;
-    line-height: 1.6; letter-spacing: 0.18px; color: var(--body);
-    max-width: 640px;
+  header .sub {
+    margin: 16px auto 0; max-width: 520px;
+    font-size: 16px; line-height: 1.7; color: var(--txt-2); text-align: center;
   }
-  .meta { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .pill {
-    font-size: 13px; font-weight: 500; color: var(--body);
-    background: var(--paper); border-radius: 9999px; padding: 6px 13px;
-    box-shadow: var(--sh-card);
+  .cta-row { margin-top: 34px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .cta {
+    border: none; cursor: pointer; border-radius: 9999px;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 14px 34px;
+    background: #fff; color: #0a0a0d;
+    box-shadow: 0 2px 12px rgba(255,255,255,0.12), 0 8px 32px rgba(142,162,255,0.28);
+    transition: transform .18s cubic-bezier(.2,.6,.4,1), box-shadow .2s;
   }
-  .pill b { color: var(--ink); font-weight: 600; }
-  .pill.date { background: var(--stone-t); box-shadow: var(--sh-warm); color: var(--ink); }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(255,255,255,0.16), 0 12px 40px rgba(142,162,255,0.38); }
+  .cta-ghost {
+    background: transparent; color: var(--txt-2);
+    border: 1px solid var(--line);
+    box-shadow: none;
+  }
+  .cta-ghost:hover { color: var(--txt); background: var(--bg-2); box-shadow: none; transform: translateY(-2px); }
 
-  /* ===== TL;DR ===== */
-  .tldr {
-    margin-top: 40px; background: var(--stone-t);
-    border-radius: 24px; padding: 28px 32px;
-    box-shadow: var(--sh-warm);
-  }
-  .tldr .lbl {
-    font-size: 12px; font-weight: 600; letter-spacing: 0.7px;
-    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
-  }
-  .tldr p { font-size: 17px; line-height: 1.6; letter-spacing: 0.16px; color: var(--ink); }
-  .tldr p + p { margin-top: 10px; }
-  .tldr b { font-weight: 600; }
-  .tldr .accent { color: var(--focus); font-weight: 600; }
-
-  /* ===== Section ===== */
-  section { margin-top: 72px; }
-  .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
-  .sec-no {
-    font-size: 13px; font-weight: 500; color: var(--muted);
-    font-variant-numeric: tabular-nums;
+  /* ===== sections ===== */
+  section { margin-top: 80px; }
+  .sec-head { margin-bottom: 10px; }
+  .sec-head .num {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.18em; color: var(--txt-3);
+    text-transform: uppercase; margin-bottom: 8px;
   }
   h2 {
     font-size: clamp(26px, 3.4vw, 36px); font-weight: 300;
-    line-height: 1.17; letter-spacing: normal; color: var(--ink);
+    line-height: 1.15; letter-spacing: -0.01em;
   }
-  .sec-sub { font-size: 15px; color: var(--muted); letter-spacing: 0.15px; margin-bottom: 28px; }
+  .sec-sub { margin-top: 10px; font-size: 15px; color: var(--txt-2); line-height: 1.65; max-width: 560px; }
 
-  /* ===== 卡片 ===== */
-  .card {
-    background: var(--paper); border-radius: 20px;
-    box-shadow: var(--sh-card); padding: 28px;
+  /* ===== frontends (two-lane) ===== */
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 32px; }
+  .lane {
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 20px;
+    padding: 28px; position: relative; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .lane:hover { border-color: rgba(142,162,255,0.35); transform: translateY(-3px); }
+  .lane .badge {
+    position: absolute; top: 16px; right: 16px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    padding: 4px 12px; border-radius: 9999px;
+    background: var(--accent-dim); color: var(--accent);
+  }
+  .lane .t { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+  .lane .d { font-size: 14px; color: var(--txt-2); line-height: 1.65; margin-bottom: 18px; }
+  .lane .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lane .tag {
+    font-size: 12px; color: var(--txt-2);
+    background: rgba(255,255,255,0.05); border: 1px solid var(--line);
+    border-radius: 9999px; padding: 4px 12px;
+  }
+  .lane .port {
+    margin-top: 14px; font-size: 12px; color: var(--txt-3);
+    font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.02em;
   }
 
-  /* ===== 架构图 ===== */
-  .diagram-card { padding: 12px 12px 4px; overflow: hidden; }
-  .diagram-scroll { overflow-x: auto; }
-  svg text { font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif; }
-  .lane-label {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.7px;
-    text-transform: uppercase; fill: var(--muted);
-  }
-
-  .legend {
-    display: flex; flex-wrap: wrap; gap: 10px 28px;
-    padding: 18px 16px 16px; border-top: 1px solid var(--line-soft);
-    margin-top: 8px;
-  }
-  .legend .item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); letter-spacing: 0.14px; }
-  .legend .sw { width: 22px; height: 0; border-top: 2px solid var(--graph); }
-  .legend .sw.dash { border-top-style: dashed; }
-  .legend .sw.blue { border-top-color: var(--focus); }
-
-  /* ===== 能力网格 ===== */
-  .caps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  /* ===== capability cards ===== */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 32px; }
   .cap {
-    background: var(--paper); border-radius: 16px; padding: 20px;
-    box-shadow: var(--sh-card);
-    transition: transform .2s ease, box-shadow .2s ease;
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px;
+    padding: 24px; transition: border-color .2s, transform .2s;
   }
-  .cap:hover { transform: translateY(-2px); box-shadow: var(--sh-lift), var(--sh-card); }
-  .cap .t { font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: 0.15px; margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .cap .d { font-size: 13.5px; color: var(--body); line-height: 1.55; letter-spacing: 0.14px; }
-  .tag {
-    font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 2px 9px;
-    letter-spacing: 0.14px;
+  .cap:hover { border-color: rgba(142,162,255,0.30); transform: translateY(-2px); }
+  .cap .icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
   }
-  .tag.now { background: var(--ink); color: #fff; }
-  .tag.next { background: var(--stone); color: var(--body); box-shadow: rgba(0,0,0,0.06) 0px 0px 0px 1px; }
+  .cap .icon svg { width: 18px; height: 18px; color: var(--accent); }
+  .cap .t { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .cap .d { font-size: 13px; color: var(--txt-2); line-height: 1.6; }
 
-  .group-lbl {
-    grid-column: 1 / -1; font-size: 12px; font-weight: 600;
-    letter-spacing: 0.7px; text-transform: uppercase; color: var(--muted);
-    margin-top: 8px;
+  /* ===== how it feels ===== */
+  .feel {
+    margin-top: 80px;
+    background: linear-gradient(135deg, rgba(142,162,255,0.08), rgba(142,162,255,0.02));
+    border: 1px solid var(--line); border-radius: 24px;
+    padding: 48px 40px; text-align: center;
   }
-  .group-lbl:first-child { margin-top: 0; }
+  .feel h2 { font-weight: 300; margin-bottom: 12px; }
+  .feel p { font-size: 16px; color: var(--txt-2); line-height: 1.7; max-width: 560px; margin: 0 auto; }
+  .feel .try { margin-top: 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .feel .chip {
+    font-size: 13px; color: var(--txt-2);
+    background: rgba(255,255,255,0.05); border: 1px solid var(--line);
+    border-radius: 9999px; padding: 9px 18px;
+  }
 
-  /* ===== 优劣势 ===== */
-  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .pc .card { padding: 28px; }
-  .pc h3 { font-size: 20px; font-weight: 300; color: var(--ink); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-  .pc h3 .mark {
-    width: 26px; height: 26px; border-radius: 50%; display: inline-flex;
-    align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
+  /* ===== diagram ===== */
+  .diagram-wrap {
+    margin-top: 32px; background: var(--bg-2);
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 24px 16px 8px; overflow: hidden;
   }
-  .pro h3 .mark { background: var(--ink); color: #fff; }
-  .con h3 .mark { background: var(--stone); color: var(--body); box-shadow: rgba(0,0,0,0.06) 0px 0px 0px 1px; }
-  .pc ul { list-style: none; }
-  .pc li {
-    font-size: 14px; line-height: 1.6; letter-spacing: 0.14px; color: var(--body);
-    padding: 10px 0 10px 26px; position: relative;
-    border-bottom: 1px solid var(--line-soft);
-  }
-  .pc li:last-child { border-bottom: none; }
-  .pc li::before { position: absolute; left: 2px; top: 10px; font-weight: 600; }
-  .pro li::before { content: "✓"; color: var(--ink); }
-  .con li::before { content: "✗"; color: var(--muted); }
-  .pc li b { color: var(--ink); font-weight: 600; }
-  .pc small { color: var(--muted); }
+  .diagram-wrap svg text { font-family: "Inter", "PingFang SC", sans-serif; }
 
-  /* ===== 对比表 ===== */
-  .tbl-card { padding: 8px; overflow: hidden; }
-  .tbl-scroll { overflow-x: auto; border-radius: 14px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px; }
-  th, td { padding: 14px 16px; text-align: left; line-height: 1.55; letter-spacing: 0.14px; vertical-align: top; }
-  thead th {
-    font-size: 12px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase;
-    color: var(--muted); background: var(--paper-2);
-    border-bottom: 1px solid var(--line);
+  /* ===== tech spec (collapsible) ===== */
+  .tech {
+    margin-top: 40px; border-top: 1px solid var(--line); padding-top: 28px;
   }
-  tbody td { border-bottom: 1px solid var(--line-soft); color: var(--body); }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr { transition: background .15s ease; }
-  tbody tr:hover { background: var(--paper-2); }
-  td.c1, th.c1 { font-weight: 500; color: var(--ink); }
-  .lat { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink); white-space: nowrap; }
-  .verdict { font-size: 12px; font-weight: 500; border-radius: 9999px; padding: 3px 11px; white-space: nowrap; display: inline-block; }
-  .verdict.keep { background: var(--stone); color: var(--body); box-shadow: rgba(0,0,0,0.06) 0px 0px 0px 1px; }
-  .verdict.no { background: var(--paper-2); color: var(--muted); }
-  .verdict.win { background: var(--ink); color: #fff; }
-  tr.win-row { background: var(--stone-t); }
-  tr.win-row td { color: var(--ink); }
-  tr.win-row td.c1 { font-weight: 600; }
-  tr.win-row:hover { background: var(--stone); }
+  .tech summary {
+    cursor: pointer; list-style: none;
+    font-size: 13px; font-weight: 500; color: var(--txt-3);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color .15s;
+  }
+  .tech summary::-webkit-details-marker { display: none; }
+  .tech summary::before { content: '▸ '; }
+  .tech details[open] summary::before { content: '▾ '; }
+  .tech summary:hover { color: var(--txt-2); }
+  .tech .inner {
+    margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .tech .spec {
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .tech .spec .k { font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--txt-3); margin-bottom: 6px; }
+  .tech .spec .v { font-size: 14px; color: var(--txt-2); line-height: 1.55; }
 
-  /* ===== 高亮结论 ===== */
-  .hl {
-    margin-top: 24px; background: var(--paper); border-radius: 24px;
-    padding: 32px 36px; box-shadow: var(--sh-card);
-    position: relative; overflow: hidden;
-  }
-  .hl::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-    background: var(--focus);
-  }
-  .hl .lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--focus); margin-bottom: 12px; }
-  .hl p { font-size: 16px; line-height: 1.7; letter-spacing: 0.16px; color: var(--body); }
-  .hl p + p { margin-top: 12px; }
-  .hl b { color: var(--ink); font-weight: 600; }
-  .hl .lead { font-size: 19px; color: var(--ink); font-weight: 400; line-height: 1.55; }
-
-  /* ===== 页脚 ===== */
+  /* ===== footer ===== */
   footer {
-    margin-top: 80px; padding-top: 28px; border-top: 1px solid var(--line-soft);
+    margin-top: 80px; padding-top: 28px; border-top: 1px solid var(--line);
     display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
-    font-size: 13px; color: var(--muted); letter-spacing: 0.14px;
+    font-size: 13px; color: var(--txt-3);
   }
-  footer a { color: var(--ink); text-decoration: none; font-weight: 500; }
-  footer a:hover { text-decoration: underline; }
 
-  /* ===== 响应式 ===== */
-  @media (max-width: 1024px) {
-    .hero { padding: 56px 0 32px; }
-    section { margin-top: 56px; }
-    .pc { grid-template-columns: 1fr; }
-    .tldr, .hl { padding: 24px; }
-    .card { padding: 22px; }
+  @media (max-width: 768px) {
+    .lanes { grid-template-columns: 1fr; }
+    .inner { grid-template-columns: 1fr; }
+    .feel { padding: 32px 24px; }
   }
-  @media (max-width: 700px) {
-    .caps { grid-template-columns: 1fr; }
-    .nav-brand .full { display: none; }
+  @media (max-width: 640px) {
+    .nav-links .hide-sm { display: none; }
   }
 </style>
 </head>
@@ -262,279 +215,244 @@
 
 <nav class="nav">
   <div class="nav-in">
-    <div class="nav-brand"><span class="dot"></span><span class="full">LiveKit 语音助手 · </span>架构分析</div>
-    <a class="nav-link" href="/">← 返回通话 Demo</a>
+    <div class="brand"><span class="dot"></span>超脑语音助手</div>
+    <div class="nav-links">
+      <a href="/" class="hide-sm">← 通话 Demo</a>
+      <a href="/architecture.html">架构分析</a>
+    </div>
   </div>
 </nav>
 
 <div class="wrap">
 
-  <!-- ===== Hero ===== -->
-  <header class="hero">
-    <span class="eyebrow"><span class="pulse"></span>六框架横向实测后的选定路线</span>
-    <h1>系统架构与选型分析</h1>
-    <p class="sub">LiveKit Agents 语音助手 —— 把「实时传输层」和「Agent 编排层」做成一体的工程化主线，兼顾低延迟与高能力上限。</p>
-    <div class="meta">
-      <span class="pill">框架 <b>LiveKit Agents 1.1.7</b></span>
-      <span class="pill">传输 <b>WebRTC SFU</b></span>
-      <span class="pill">模型 <b>百炼 qwen3-omni-flash-realtime</b></span>
-      <span class="pill">实测首音频延迟 <b>~514ms</b></span>
-      <span class="pill date">2026-07-27</span>
-    </div>
-  </header>
-
-  <!-- ===== TL;DR ===== -->
-  <div class="tldr">
-    <div class="lbl">TL;DR</div>
-    <p>六个开源框架实测后，选定 <b>LiveKit Agents</b> 作为工程化主线：浏览器经 WebRTC 接入本地 LiveKit Server，由 Agent Worker 编排后接阿里云百炼 Realtime 一体模型，端到端首音频延迟 <b>~514ms</b>（其中编排成本 ~260ms）。</p>
-    <p>它不是最快的（voice-agent / FastRTC 直连约 ~250ms），但是<span class="accent">唯一能把工具调用、RAG、多模型混编、电话 SIP 全部做成框架原生能力</span>、并能平滑演进到「双 LLM 终态」的底座 —— 延迟与能力的最佳平衡点。</p>
+<header>
+  <div class="eyebrow"><span class="dot"></span>为什么选这条路</div>
+  <h1>能说会道的 AI，<br>需要好底盘。</h1>
+  <p class="sub">不是最快的，但是能把工具调用、知识库检索、双模型混编、电话接入全部做成一等公民能力的底座。</p>
+  <div class="cta-row">
+    <button class="cta" onclick="location.href='/'">开始对话</button>
+    <button class="cta cta-ghost" onclick="document.getElementById('tech').open=true">技术细节</button>
   </div>
+</header>
 
-  <!-- ===== 0 架构图 ===== -->
-  <section id="arch">
-    <div class="sec-head"><span class="sec-no">00</span><h2>系统架构图</h2></div>
-    <p class="sec-sub">两条前端链路，汇入同一套 LiveKit 传输与编排后端；仅模型走公网，其余全部本机私有化。</p>
-
-    <div class="card diagram-card">
-      <div class="diagram-scroll">
-      <svg viewBox="0 0 980 640" width="100%" role="img" aria-label="系统架构图：两条前端链路共用 LiveKit 后端">
-        <defs>
-          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill="#4e4e4e"/>
-          </marker>
-          <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
-          </marker>
-          <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill="#777169"/>
-          </marker>
-        </defs>
-
-        <!-- ===== 分组底框 ===== -->
-        <!-- 本地私有化部署 -->
-        <rect x="150" y="20" width="470" height="560" rx="20" fill="#f5f5f5" stroke="#e5e5e5"/>
-        <text x="176" y="50" class="lane-label">本地私有化部署 · 内网可跑</text>
-
-        <!-- 云端 -->
-        <rect x="680" y="20" width="280" height="180" rx="20" fill="#f5f2ef" stroke="#e5e5e5"/>
-        <text x="706" y="50" class="lane-label">云端模型服务</text>
-
-        <!-- ===== 链路 A 泳道标签 ===== -->
-        <text x="30" y="120" class="lane-label" fill="#2563eb">链路 A · 直连</text>
-
-        <!-- 浏览器 A -->
-        <rect x="20" y="135" width="120" height="120" rx="14" fill="#ffffff" stroke="#e5e5e5"/>
-        <text x="80" y="162" text-anchor="middle" font-size="13" font-weight="600" fill="#000">浏览器</text>
-        <text x="80" y="182" text-anchor="middle" font-size="10.5" fill="#4e4e4e">livekit-client JS</text>
-        <text x="80" y="198" text-anchor="middle" font-size="10.5" fill="#4e4e4e">麦克风采集/播放</text>
-        <text x="80" y="214" text-anchor="middle" font-size="10.5" fill="#4e4e4e">FastRTC 风格 UI</text>
-        <text x="80" y="238" text-anchor="middle" font-size="10" font-weight="500" fill="#2563eb">:8899 页面</text>
-
-        <!-- ===== 链路 B 泳道标签 ===== -->
-        <text x="30" y="320" class="lane-label" fill="#2563eb">链路 B · FastRTC 原版桥接</text>
-
-        <!-- 浏览器 B (FastRTC 原版) -->
-        <rect x="20" y="335" width="120" height="120" rx="14" fill="#ffffff" stroke="#e5e5e5"/>
-        <text x="80" y="362" text-anchor="middle" font-size="13" font-weight="600" fill="#000">浏览器</text>
-        <text x="80" y="382" text-anchor="middle" font-size="10.5" fill="#4e4e4e">FastRTC 原版 UI</text>
-        <text x="80" y="398" text-anchor="middle" font-size="10.5" fill="#4e4e4e">Gradio 电话式界面</text>
-        <text x="80" y="422" text-anchor="middle" font-size="10" font-weight="500" fill="#2563eb">:7860 页面</text>
-
-        <!-- 桥接 -->
-        <rect x="180" y="345" width="150" height="110" rx="14" fill="#ffffff" stroke="#e5e5e5"/>
-        <text x="255" y="372" text-anchor="middle" font-size="12.5" font-weight="600" fill="#000">livekit_bridge_chat.py</text>
-        <text x="255" y="390" text-anchor="middle" font-size="10.5" fill="#4e4e4e">AsyncStreamHandler 桥接</text>
-        <text x="255" y="406" text-anchor="middle" font-size="10.5" fill="#4e4e4e">16kHz 进 / 24kHz 出</text>
-        <text x="255" y="422" text-anchor="middle" font-size="10.5" fill="#4e4e4e">10ms 帧 · 每连接开新房</text>
-        <text x="255" y="442" text-anchor="middle" font-size="10" font-weight="500" fill="#777169">copy() 出新 handler</text>
-
-        <!-- Token Server（旁路） -->
-        <rect x="180" y="80" width="150" height="60" rx="12" fill="#ffffff" stroke="#e5e5e5"/>
-        <text x="255" y="103" text-anchor="middle" font-size="12" font-weight="600" fill="#000">Token Server</text>
-        <text x="255" y="121" text-anchor="middle" font-size="10.5" fill="#4e4e4e">FastAPI :8899 签发 JWT</text>
-
-        <!-- LiveKit Server（共用枢纽） -->
-        <rect x="380" y="240" width="150" height="130" rx="14" fill="#ffffff" stroke="#4e4e4e" stroke-width="1.5"/>
-        <text x="455" y="266" text-anchor="middle" font-size="13" font-weight="600" fill="#000">LiveKit Server</text>
-        <text x="455" y="284" text-anchor="middle" font-size="10.5" fill="#4e4e4e">SFU 传输层 · WebRTC</text>
-        <text x="455" y="300" text-anchor="middle" font-size="10.5" fill="#4e4e4e">房间 / 参与者管理</text>
-        <text x="455" y="316" text-anchor="middle" font-size="10.5" fill="#4e4e4e">Docker :7880 (--dev)</text>
-        <text x="455" y="342" text-anchor="middle" font-size="10" font-weight="500" fill="#2563eb">创建房间时派发 Agent Job</text>
-
-        <!-- Agent Worker -->
-        <rect x="380" y="430" width="220" height="130" rx="14" fill="#ffffff" stroke="#4e4e4e" stroke-width="1.5"/>
-        <text x="490" y="456" text-anchor="middle" font-size="13" font-weight="600" fill="#000">Agent Worker（Python）</text>
-        <text x="490" y="474" text-anchor="middle" font-size="10.5" fill="#4e4e4e">livekit-agents 1.1.7（锁版）</text>
-        <text x="490" y="490" text-anchor="middle" font-size="10.5" fill="#4e4e4e">Silero VAD 本地推理 · barge-in 打断</text>
-        <text x="490" y="506" text-anchor="middle" font-size="10.5" fill="#4e4e4e">工具调用 / 会话状态机 · metadata 补丁</text>
-        <text x="490" y="530" text-anchor="middle" font-size="10" font-weight="500" fill="#2563eb">可挂：RAG / 多模型 / SIP</text>
-
-        <!-- 百炼 -->
-        <rect x="710" y="70" width="220" height="110" rx="14" fill="#ffffff" stroke="#4e4e4e" stroke-width="1.5"/>
-        <text x="820" y="96" text-anchor="middle" font-size="13" font-weight="600" fill="#000">阿里云百炼 Realtime</text>
-        <text x="820" y="114" text-anchor="middle" font-size="10.5" fill="#4e4e4e">qwen3-omni-flash-realtime</text>
-        <text x="820" y="130" text-anchor="middle" font-size="10.5" fill="#4e4e4e">STT + LLM + TTS 一体 · voice = Cherry</text>
-        <text x="820" y="152" text-anchor="middle" font-size="10" font-weight="500" fill="#777169">仅兼容 OpenAI beta 协议</text>
-
-        <!-- ===== 箭头 ===== -->
-        <!-- A: 浏览器 -> LiveKit Server -->
-        <path d="M140,195 C 240,195 300,270 376,292" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrB)"/>
-        <text x="235" y="212" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">WebRTC①</text>
-        <text x="235" y="226" text-anchor="middle" font-size="9" fill="#777169">音频轨（双向）</text>
-
-        <!-- A: 浏览器 -> Token Server（取 token 虚线） -->
-        <path d="M120,135 C 160,120 170,118 178,114" fill="none" stroke="#777169" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrM)"/>
-        <text x="150" y="112" text-anchor="middle" font-size="9" fill="#777169">HTTP 取 token</text>
-
-        <!-- B: 浏览器 -> 桥接 -->
-        <line x1="140" y1="395" x2="176" y2="398" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrB)"/>
-        <text x="158" y="386" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2563eb">WebRTC①</text>
-
-        <!-- B: 桥接 -> LiveKit Server -->
-        <path d="M330,400 C 360,400 360,360 376,340" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrB)"/>
-        <text x="362" y="392" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2563eb">WebRTC②</text>
-
-        <!-- B: 桥接 -> Token Server（取 token 虚线） -->
-        <path d="M255,345 C 255,300 255,180 255,142" fill="none" stroke="#777169" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrM)"/>
-        <text x="300" y="240" text-anchor="middle" font-size="9" fill="#777169">HTTP 取 token</text>
-
-        <!-- LiveKit Server -> Agent Worker -->
-        <line x1="455" y1="370" x2="455" y2="426" stroke="#4e4e4e" stroke-width="1.5" marker-end="url(#arr)"/>
-        <text x="522" y="392" text-anchor="middle" font-size="10" font-weight="600" fill="#4e4e4e">房间事件</text>
-        <text x="522" y="406" text-anchor="middle" font-size="9" fill="#777169">job 分发 + 媒体转发</text>
-
-        <!-- Agent Worker -> 百炼 -->
-        <path d="M600,470 C 660,470 660,180 706,140" fill="none" stroke="#4e4e4e" stroke-width="1.5" marker-end="url(#arr)"/>
-        <text x="660" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="#4e4e4e">WebSocket</text>
-        <text x="660" y="314" text-anchor="middle" font-size="9" fill="#777169">Realtime beta 协议</text>
-
-        <!-- ===== 延迟标注 ===== -->
-        <rect x="180" y="500" width="180" height="60" rx="12" fill="#f5f2ef" stroke="#e5e5e5"/>
-        <text x="270" y="524" text-anchor="middle" font-size="11" font-weight="600" fill="#000">实测端到端首音频</text>
-        <text x="270" y="544" text-anchor="middle" font-size="12" font-weight="600" fill="#2563eb">~514ms（编排 ~260ms）</text>
-      </svg>
+<!-- ===== 两种前端 ===== -->
+<section>
+  <div class="sec-head">
+    <div class="num">入口</div>
+    <h2>两种体验，同一套大脑</h2>
+  </div>
+  <p class="sec-sub">一套 Agent 后端，两条前端链路。选你喜欢的风格，能力完全一致。</p>
+  <div class="lanes">
+    <div class="lane">
+      <span class="badge">推荐</span>
+      <div class="t">沉浸通话</div>
+      <div class="d">暗色沉浸式界面，一颗随声音律动的通话球。最小化视觉干扰，让对话本身成为焦点。</div>
+      <div class="tags">
+        <span class="tag">对话侧栏</span>
+        <span class="tag">实时波形</span>
+        <span class="tag">静音 / 结束</span>
       </div>
-
-      <div class="legend">
-        <span class="item"><span class="sw blue"></span>实时音频通路（双向，可打断）</span>
-        <span class="item"><span class="sw"></span>房间事件 / 模型协议</span>
-        <span class="item"><span class="sw dash"></span>控制 / 信令通路</span>
-        <span class="item">部署形态：浏览器 + Token Server + LiveKit Server(Docker) + Agent Worker 全本机，仅模型走公网百炼</span>
+      <div class="port">localhost:8899</div>
+    </div>
+    <div class="lane">
+      <span class="badge">经典</span>
+      <div class="t">电话式交互</div>
+      <div class="d">FastRTC 经典电话 UI，大圆球随音量呼吸。点一下接听，授权麦克风即可开聊。</div>
+      <div class="tags">
+        <span class="tag">脉冲通话球</span>
+        <span class="tag">WebRTC 桥接</span>
+        <span class="tag">一键接入</span>
       </div>
+      <div class="port">localhost:7860</div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ===== 1 能力范围 ===== -->
-  <section id="caps">
-    <div class="sec-head"><span class="sec-no">01</span><h2>能力范围</h2></div>
-    <p class="sec-sub">已实测落地的 4 项，加上框架开箱即用的 6 项 —— 后者是直连方案需要手写补齐的部分。</p>
-
-    <div class="caps">
-      <div class="group-lbl">已实测</div>
-      <div class="cap"><div class="t">实时全双工语音对话 <span class="tag now">已实测</span></div><div class="d">浏览器 ↔ 百炼 realtime 一体模型，边说边听，端到端 ~514ms</div></div>
-      <div class="cap"><div class="t">插话打断 barge-in <span class="tag now">已实测</span></div><div class="d">助手说话中可随时插嘴，Silero VAD 本地检测 + server_vad 双保险</div></div>
-      <div class="cap"><div class="t">私有化部署 <span class="tag now">已实测</span></div><div class="d">传输层全本机（Docker LiveKit + Python Worker），仅模型出公网，可整体搬进内网</div></div>
-      <div class="cap"><div class="t">电话式前端交互 <span class="tag now">已实测</span></div><div class="d">FastRTC 风格脉冲通话球 + 静音控制，零学习成本演示</div></div>
-
-      <div class="group-lbl">框架开箱</div>
-      <div class="cap"><div class="t">工具调用 / Function Calling <span class="tag next">开箱支持</span></div><div class="d">Agent 框架一等公民：查数据、执行业务动作、调度内部系统</div></div>
-      <div class="cap"><div class="t">知识库 RAG <span class="tag next">开箱支持</span></div><div class="d">框架内置检索管线，企业文档问答可直接挂接</div></div>
-      <div class="cap"><div class="t">多模型混编（双 LLM 终态） <span class="tag next">开箱支持</span></div><div class="d">flash 模型先出声抢延迟，高推理模型后台补充 —— 鱼和熊掌兼得</div></div>
-      <div class="cap"><div class="t">电话 SIP 接入 <span class="tag next">开箱支持</span></div><div class="d">同一 Agent 直接接电话线，客服 / 外呼场景无需重写</div></div>
-      <div class="cap"><div class="t">多方会议 / 视频 <span class="tag next">开箱支持</span></div><div class="d">SFU 天然支持多人多轨，可加视觉理解（omni 模型本身支持视频输入）</div></div>
-      <div class="cap"><div class="t">模型可替换 <span class="tag next">开箱支持</span></div><div class="d">换 OpenAI Realtime / Gemini Live 只改 Worker 配置，前端与传输层零改动</div></div>
+<!-- ===== 能力 ===== -->
+<section>
+  <div class="sec-head">
+    <div class="num">能力</div>
+    <h2>现在就能做的事</h2>
+  </div>
+  <p class="sec-sub">四项已跑通的场景，以及框架开箱可做的更多。</p>
+  <div class="grid">
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div>
+      <div class="t">全双工语音对话</div>
+      <div class="d">边说边听，支持插话打断（barge-in）。助手说话时你随时可以插嘴，无需等它说完。</div>
     </div>
-  </section>
-
-  <!-- ===== 2 优劣势 ===== -->
-  <section id="pc">
-    <div class="sec-head"><span class="sec-no">02</span><h2>优势与劣势</h2></div>
-    <p class="sec-sub">选型不是选最快的，而是选能力天花板与延迟最平衡的。</p>
-
-    <div class="pc">
-      <div class="card pro">
-        <h3><span class="mark">✓</span>优势</h3>
-        <ul>
-          <li><b>工程能力天花板高</b> — 工具 / RAG / SIP / 多方全是框架原生能力，不需要自己造 <small>（voice-agent 直连方案这些都要手写）</small></li>
-          <li><b>生态最活跃</b> — 六框架实测中社区、文档、商业支持（LiveKit Cloud）都是第一梯队</li>
-          <li><b>传输层专业</b> — WebRTC SFU 自带弱网对抗、自适应码率，浏览器 / 移动端 / 电话全端覆盖</li>
-          <li><b>延迟可接受</b> — ~514ms 在实时对话感知阈值内，且编排成本是一次性固定开销</li>
-          <li><b>模型解耦</b> — 百炼可平替 OpenAI Realtime，协议已打通（含 beta 协议踩坑经验）</li>
-          <li><b>可私有化</b> — 除模型外全栈本地，满足企业内网合规要求</li>
-        </ul>
-      </div>
-      <div class="card con">
-        <h3><span class="mark">✗</span>劣势</h3>
-        <ul>
-          <li><b>延迟高于直连</b> — 比 voice-agent 直连百炼（~250ms）多 ~260ms 编排成本 <small>（追求极限延迟的演示场景直连仍最优）</small></li>
-          <li><b>组件多、运维面大</b> — 需维护 LiveKit Server + Agent Worker + Token 服务三个进程</li>
-          <li><b>百炼兼容有坑</b> — 插件必须锁 1.1.7（≥1.2 静默超时）、metadata 需打补丁，升级需重新验证</li>
-          <li><b>学习曲线</b> — 房间 / 轨道 / job 分发概念比「开一个 WebSocket」复杂</li>
-          <li><b>不及管道方案灵活</b> — 若需逐字控制 STT/LLM/TTS 任意组合，Pipecat 管道更细粒度（但延迟 ~2.1s）</li>
-        </ul>
-      </div>
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="t">查待办</div>
+      <div class="d">问「我今天有什么待办」，自动从笔记里找出今天的安排读给你听。</div>
     </div>
-  </section>
-
-  <!-- ===== 3 差异化对比 ===== -->
-  <section id="compare">
-    <div class="sec-head"><span class="sec-no">03</span><h2>与其他方案的差异</h2></div>
-    <p class="sec-sub">五个开源框架横向实测，LiveKit 是延迟与能力的最佳平衡点。</p>
-
-    <div class="card tbl-card">
-      <div class="tbl-scroll">
-      <table>
-        <thead>
-          <tr><th class="c1">对比对象</th><th>路线</th><th>实测延迟</th><th>关键差异</th><th>结论</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="c1">voice-agent（现有）</td><td>浏览器直连百炼 WS</td><td class="lat">~250ms</td>
-            <td>无编排层，最快；但工具 / RAG / SIP / 多方都要手写，工程上限低</td>
-            <td><span class="verdict keep">保留做轻量演示</span></td>
-          </tr>
-          <tr>
-            <td class="c1">FastRTC</td><td>直连 + Gradio 封装</td><td class="lat">~250ms 级</td>
-            <td>上手最快、UX 好（已借鉴其前端）；本质还是直连，工程能力同 voice-agent</td>
-            <td><span class="verdict keep">前端灵感来源</span></td>
-          </tr>
-          <tr>
-            <td class="c1">TEN Framework</td><td>编排 + 图编排</td><td class="lat">—（可跑未深测）</td>
-            <td>强绑 Agora 生态、百炼支持薄、实测踩 20 个坑</td>
-            <td><span class="verdict no">不选</span></td>
-          </tr>
-          <tr>
-            <td class="c1">Pipecat</td><td>编排 + STT→LLM→TTS 管道</td><td class="lat">~2.1s</td>
-            <td>逐段可控但延迟超实时阈值，对话感明显「慢半拍」</td>
-            <td><span class="verdict no">不适合实时对话</span></td>
-          </tr>
-          <tr>
-            <td class="c1">Vocode</td><td>编排 + 管道</td><td class="lat">—</td>
-            <td>仓库 404，项目已死</td>
-            <td><span class="verdict no">排除</span></td>
-          </tr>
-          <tr class="win-row">
-            <td class="c1">LiveKit Agents（选定）</td><td>编排 + realtime 一体模型</td><td class="lat">~514ms</td>
-            <td>延迟与能力的最佳平衡点</td>
-            <td><span class="verdict win">工程化主线</span></td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div class="t">知识库检索</div>
+      <div class="d">问「wiki 里关于 X 怎么说的」，AI 会搜索全部笔记，找最相关的段落回答你。</div>
     </div>
-
-    <div class="hl">
-      <div class="lbl">最大的差异化优势</div>
-      <p class="lead">LiveKit 是唯一把「实时传输层」和「Agent 编排层」做成一体的框架。</p>
-      <p>别的方案里，WebRTC 传输（弱网对抗、多端适配、电话接入）要自己拼；Agent 编排（打断、工具、状态机）也要自己拼。LiveKit 两边都是生产级现成的，中间用「房间 / job 分发」模型天然咬合。</p>
-      <p>这让它成为唯一能平滑演进到 <b>双 LLM 终态架构</b>（flash 先出声 + 高推理模型补充）的底座：多模型混编、会话级状态、工具调度都在编排层原生就位 —— 而这正是「高推理能力 + 低延迟」这一核心需求的最终解法。</p>
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="t">深度思考</div>
+      <div class="d">遇到需要分析的问题，说「深入想想…」，系统会把难题交给高推理模型细想，然后告诉你结论。</div>
     </div>
-  </section>
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+      <div class="t">电话接入</div>
+      <div class="d">框架支持 SIP 电话线路。同一个 AI 助手可以直接接打电话，不用另外写一套。</div>
+    </div>
+    <div class="cap">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      <div class="t">多方会议</div>
+      <div class="d">SFU 传输层原生支持多人多轨。随时可以加人开语音会，或接入摄像头做视频理解。</div>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    <span>LiveKit Agents 语音助手 · 系统架构与选型分析 · 2026-07-27</span>
-    <span>配套演示：<a href="/">通话 Demo</a></span>
-  </footer>
+<!-- ===== feel / try it ===== -->
+<section class="feel">
+  <h2>不是冷冰冰的技术参数</h2>
+  <p>你不需要知道 WebRTC 是什么、LiveKit 怎么跑。打开页面，点一下，直接说。剩下的交给系统。</p>
+  <div class="try">
+    <span class="chip">我今天有什么待办</span>
+    <span class="chip">wiki 里语音 agent 选型怎么说的</span>
+    <span class="chip">深入想想双 LLM 架构</span>
+  </div>
+</section>
+
+<!-- ===== 架构图 ===== -->
+<section>
+  <div class="sec-head">
+    <div class="num">底层</div>
+    <h2>它在后台怎么运转</h2>
+  </div>
+  <p class="sec-sub">两条前端链路，汇入同一套传输与编排后端。除了模型走公网，其余全在本地。</p>
+
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 880 520" width="100%" role="img" aria-label="系统架构图">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="rgba(255,255,255,0.45)"/></marker>
+      <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#8ea2ff"/></marker>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+
+    <!-- 本地区 -->
+    <rect x="60" y="14" width="560" height="490" rx="18" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"/>
+    <text x="82" y="40" font-size="10.5" font-weight="600" letter-spacing="0.14em" fill="rgba(255,255,255,0.35)" text-transform="uppercase">本地私有化</text>
+
+    <!-- 云端 -->
+    <rect x="670" y="14" width="190" height="140" rx="18" fill="rgba(142,162,255,0.06)" stroke="rgba(142,162,255,0.20)"/>
+    <text x="690" y="40" font-size="10.5" font-weight="600" letter-spacing="0.14em" fill="rgba(142,162,255,0.55)">云端模型</text>
+
+    <!-- 浏览器 8899 -->
+    <rect x="20" y="68" width="130" height="100" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)"/>
+    <text x="85" y="94" text-anchor="middle" font-size="13" font-weight="500" fill="rgba(255,255,255,0.9)">沉浸通话</text>
+    <text x="85" y="112" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.45)">暗色界面</text>
+    <text x="85" y="128" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.45)">波形球 · 对话侧栏</text>
+    <text x="85" y="148" text-anchor="middle" font-size="10" font-weight="500" fill="#8ea2ff">:8899</text>
+
+    <!-- 浏览器 7860 -->
+    <rect x="20" y="210" width="130" height="100" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)"/>
+    <text x="85" y="236" text-anchor="middle" font-size="13" font-weight="500" fill="rgba(255,255,255,0.9)">电话式前端</text>
+    <text x="85" y="254" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.45)">FastRTC 经典电话 UI</text>
+    <text x="85" y="270" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.45)">脉冲球 · 桥接模式</text>
+    <text x="85" y="290" text-anchor="middle" font-size="10" font-weight="500" fill="#8ea2ff">:7860</text>
+
+    <!-- 桥接 -->
+    <rect x="190" y="220" width="130" height="80" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)"/>
+    <text x="255" y="244" text-anchor="middle" font-size="11.5" font-weight="500" fill="rgba(255,255,255,0.75)">桥接服务</text>
+    <text x="255" y="262" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.40)">WebRTC 转发</text>
+    <text x="255" y="278" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.40)">10ms 帧 · 16kHz</text>
+
+    <!-- LiveKit Server -->
+    <rect x="370" y="150" width="150" height="120" rx="14" fill="rgba(255,255,255,0.06)" stroke="rgba(142,162,255,0.30)" filter="url(#glow)"/>
+    <text x="445" y="176" text-anchor="middle" font-size="13" font-weight="600" fill="rgba(255,255,255,0.92)">LiveKit Server</text>
+    <text x="445" y="196" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">WebRTC SFU</text>
+    <text x="445" y="214" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">房间 / 轨道管理</text>
+    <text x="445" y="244" text-anchor="middle" font-size="10" font-weight="500" fill="#8ea2ff">创建时派发 Agent</text>
+
+    <!-- Agent Worker -->
+    <rect x="370" y="330" width="200" height="130" rx="14" fill="rgba(255,255,255,0.06)" stroke="rgba(142,162,255,0.30)" filter="url(#glow)"/>
+    <text x="470" y="356" text-anchor="middle" font-size="13" font-weight="600" fill="rgba(255,255,255,0.92)">Agent Worker</text>
+    <text x="470" y="376" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">livekit-agents · 编排层</text>
+    <text x="470" y="394" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">VAD · 打断 · 状态机</text>
+    <text x="470" y="412" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">工具调用 · RAG · 双 LLM</text>
+    <text x="470" y="438" text-anchor="middle" font-size="10" font-weight="500" fill="#8ea2ff">可扩展：SIP / 会议</text>
+
+    <!-- 百炼 -->
+    <rect x="680" y="46" width="170" height="100" rx="14" fill="rgba(142,162,255,0.08)" stroke="rgba(142,162,255,0.25)"/>
+    <text x="765" y="70" text-anchor="middle" font-size="13" font-weight="600" fill="rgba(255,255,255,0.90)">百炼 Realtime</text>
+    <text x="765" y="88" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">qwen3-omni 一体模型</text>
+    <text x="765" y="106" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,0.50)">STT + LLM + TTS</text>
+    <text x="765" y="126" text-anchor="middle" font-size="10" fill="rgba(142,162,255,0.60)">Cherry 音色</text>
+
+    <!-- 箭头 -->
+    <path d="M150,118 C 220,118 290,140 366,200" fill="none" stroke="#8ea2ff" stroke-width="1.4" marker-end="url(#arrA)"/>
+    <text x="240" y="140" text-anchor="middle" font-size="9.5" font-weight="500" fill="#8ea2ff">WebRTC</text>
+
+    <path d="M150,260 C 170,260 178,260 186,260" fill="none" stroke="#8ea2ff" stroke-width="1.4" marker-end="url(#arrA)"/>
+    <path d="M320,260 C 340,260 348,210 366,210" fill="none" stroke="#8ea2ff" stroke-width="1.4" marker-end="url(#arrA)"/>
+
+    <line x1="445" y1="270" x2="445" y2="326" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" marker-end="url(#arr)"/>
+    <text x="530" y="290" text-anchor="middle" font-size="10" font-weight="500" fill="rgba(255,255,255,0.55)">房间事件</text>
+
+    <path d="M570,370 C 620,370 620,100 676,96" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" marker-end="url(#arr)"/>
+    <text x="620" y="240" text-anchor="middle" font-size="10" font-weight="500" fill="rgba(255,255,255,0.55)">Realtime WS</text>
+
+    <!-- 标注 -->
+    <rect x="170" y="420" width="170" height="50" rx="10" fill="rgba(142,162,255,0.08)" stroke="rgba(142,162,255,0.20)"/>
+    <text x="255" y="444" text-anchor="middle" font-size="10.5" font-weight="500" fill="rgba(255,255,255,0.80)">本地全栈 · 仅模型出公网</text>
+    <text x="255" y="460" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.45)">可整体搬进内网</text>
+  </svg>
+  </div>
+</section>
+
+<!-- ===== 真正的差异化 ===== -->
+<section>
+  <div class="sec-head">
+    <div class="num">为什么</div>
+    <h2>不是最快的，但最平衡</h2>
+  </div>
+  <p class="sec-sub">纯直连方案 ~250ms，但工具、知识库、电话、会议全要手写。LiveKit 多花 ~260ms 编排成本，换来的是框架原生的工程上限。</p>
+  <div class="grid">
+    <div class="cap">
+      <div class="t">传输层专业级</div>
+      <div class="d">WebRTC SFU 自带弱网对抗、自适应码率。浏览器、手机、电话——一次接入，全端覆盖。</div>
+    </div>
+    <div class="cap">
+      <div class="t">编排即能力</div>
+      <div class="d">打断、工具调用、多轮会话、状态机——不是外挂，是框架原生。AI 不只是聊天，还能做事。</div>
+    </div>
+    <div class="cap">
+      <div class="t">模型可替换</div>
+      <div class="d">百炼 → OpenAI Realtime / Gemini Live，只改一行配置。前端和传输层完全不动。</div>
+    </div>
+    <div class="cap">
+      <div class="t">平滑演进</div>
+      <div class="d">现在用一体模型，以后加 RAG、加第二个高推理模型、加 SIP——同一条路线，逐步叠加。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== tech details (collapsible) ===== -->
+<details class="tech" id="tech">
+  <summary>技术细节（给工程师）</summary>
+  <div class="inner">
+    <div class="spec"><div class="k">编排框架</div><div class="v">LiveKit Agents 1.1.7（锁版兼容百炼 beta 协议）</div></div>
+    <div class="spec"><div class="k">语音模型</div><div class="v">阿里云百炼 qwen3-omni-flash-realtime，STT+LLM+TTS 一体</div></div>
+    <div class="spec"><div class="k">本地 VAD</div><div class="v">Silero（本地推理）+ server_vad（云端），双保险打断</div></div>
+    <div class="spec"><div class="k">传输协议</div><div class="v">WebRTC（浏览器→LiveKit）+ WS Realtime beta（Worker→百炼）</div></div>
+    <div class="spec"><div class="k">前端 A</div><div class="v">自研暗色沉浸界面（:8899），LiveKit-client JS SDK，AnalyserNode 波形驱动</div></div>
+    <div class="spec"><div class="k">前端 B</div><div class="v">FastRTC 电话 UI（:7860），AsyncStreamHandler 桥接 16kHz↔24kHz</div></div>
+    <div class="spec"><div class="k">已知兼容处理</div><div class="v">百炼不回显 metadata → monkey-patch；≥1.2 插件 GA 协议超时 → 锁 1.1.7</div></div>
+    <div class="spec"><div class="k">部署</div><div class="v">Docker Compose（livekit-server + agent + Caddy 反代），仅模型走公网</div></div>
+  </div>
+</details>
+
+<footer>
+  <span>超脑 · 语音助手 · 2026</span>
+  <span><a href="/">← 通话 Demo</a></span>
+</footer>
 
 </div>
 </body>

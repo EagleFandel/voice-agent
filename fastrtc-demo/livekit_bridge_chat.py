@@ -134,18 +134,13 @@ class LiveKitBridgeHandler(AsyncStreamHandler):
 
 SUBTITLE_HTML = """
 <div style="max-width: 760px; margin: 0 auto;">
-  <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">框架 <b style="color:#2563eb;">LiveKit Agents 1.1.7</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">传输 <b style="color:#2563eb;">WebRTC ×2（浏览器↔桥↔LiveKit Server）</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">模型 <b style="color:#2563eb;">百炼 qwen3-omni-flash-realtime</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">VAD <b style="color:#2563eb;">Silero（本地）</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">打断 <b style="color:#2563eb;">barge-in</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">实测首音频延迟 <b style="color:#2563eb;">~514ms</b></span>
-    <span style="border:1px solid #c7d2fe; background:#eef2ff; border-radius:6px; padding:3px 9px; font-size:12px;">前端 <b style="color:#2563eb;">FastRTC 电话式 UI</b></span>
+  <div style="font-size:14px; color:rgba(255,255,255,0.62); line-height:1.7; margin-bottom:14px;">
+    点电话图标开始，授权麦克风后直接说话。助手说话时可以插话打断。
   </div>
-  <div style="font-size:12px; color:#6b7280; line-height:1.7;">
-    链路：浏览器 → WebRTC → 桥接服务 → LiveKit Server（Docker 本地）→ Agent Worker（livekit-agents + Silero VAD）→ 百炼 Realtime<br>
-    玩法：点电话图标开始通话，授权麦克风后直接说话；助手说话时可插话打断。
+  <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+    <span style="background:rgba(142,162,255,0.12); color:rgba(142,162,255,0.90); border-radius:9999px; padding:5px 13px; font-size:12px; font-weight:500;">查待办</span>
+    <span style="background:rgba(142,162,255,0.12); color:rgba(142,162,255,0.90); border-radius:9999px; padding:5px 13px; font-size:12px; font-weight:500;">知识库检索</span>
+    <span style="background:rgba(142,162,255,0.12); color:rgba(142,162,255,0.90); border-radius:9999px; padding:5px 13px; font-size:12px; font-weight:500;">深度思考</span>
   </div>
 </div>
 """
@@ -155,14 +150,13 @@ stream = Stream(
     mode="send-receive",
     modality="audio",
     ui_args={
-        "title": "超脑 · LiveKit Agents 语音助手 Demo",
+        "title": "超脑 · 语音助手",
         "subtitle": SUBTITLE_HTML,
-        "pulse_color": "#2563eb",
-        "icon_button_color": "#2563eb",
+        "pulse_color": "#8ea2ff",
+        "icon_button_color": "#8ea2ff",
     },
 )
 
 if __name__ == "__main__":
-    # 浏览器标签页标题（Gradio 默认显示 "Gradio"）
-    stream.ui.title = "超脑语音助手 · LiveKit Agents"
+    stream.ui.title = "超脑 · 语音助手"
     stream.ui.launch(server_port=7860)
