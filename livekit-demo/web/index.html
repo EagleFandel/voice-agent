@@ -3,422 +3,443 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>超脑语音助手 · LiveKit Agents Demo</title>
+<title>超脑 · 语音助手</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0a0d'/%3E%3Ccircle cx='50' cy='50' r='26' fill='%23e6ebff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #000000;
-    --ink-soft: #4e4e4e;
-    --muted: #777169;
-    --paper: #ffffff;
-    --paper-dim: #f5f5f5;
-    --stone: #f5f2ef;
-    --stone-trans: rgba(245, 242, 239, 0.8);
-    --line: #e5e5e5;
-    --line-soft: rgba(0, 0, 0, 0.05);
-    --danger: #dc2626;
-    --ring: rgb(147 197 253 / 0.5);
-
-    /* ElevenLabs 多层亚 0.1 阴影栈 */
-    --sh-edge: rgba(0,0,0,0.075) 0px 0px 0px 0.5px inset;
-    --sh-card:
-      rgba(0,0,0,0.075) 0px 0px 0px 0.5px inset,
-      rgba(0,0,0,0.06) 0px 0px 0px 1px,
-      rgba(0,0,0,0.04) 0px 1px 2px,
-      rgba(0,0,0,0.04) 0px 2px 4px;
-    --sh-pop:
-      rgba(0,0,0,0.4) 0px 0px 1px,
-      rgba(0,0,0,0.04) 0px 4px 4px;
-    --sh-warm: rgba(78,50,23,0.04) 0px 6px 16px;
+    --bg: #0a0a0d;
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.12);
+    --line: rgba(255, 255, 255, 0.12);
+    --txt: rgba(255, 255, 255, 0.92);
+    --txt-2: rgba(255, 255, 255, 0.60);
+    --txt-3: rgba(255, 255, 255, 0.38);
+    --orb-hi: #ffffff;
+    --orb-mid: #e6ebff;
+    --orb-lo: #8ea2ff;
+    --danger: #ff6b66;
+    --energy: 0;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-font-smoothing: antialiased; }
+  html, body { height: 100%; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
   body {
-    font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--paper);
-    color: var(--ink);
-    letter-spacing: 0.16px;
-    line-height: 1.5;
+    font-family: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--txt);
+    overflow: hidden;
+    display: flex; flex-direction: column;
   }
-  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 90% 60% at 50% 32%, rgba(96, 118, 255, 0.13), transparent 65%);
+  }
+  :focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 3px; }
+  ::selection { background: rgba(142, 162, 255, 0.35); }
+  button { font-family: inherit; }
 
-  /* ===== 顶部细导航 ===== */
-  .nav {
-    position: sticky; top: 0; z-index: 50;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: saturate(180%) blur(12px);
-    border-bottom: 1px solid var(--line-soft);
+  /* ===== 顶栏 ===== */
+  .topbar {
+    position: relative; z-index: 20;
+    height: 60px; flex: none;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
   }
-  .nav-in {
-    max-width: 1080px; margin: 0 auto; padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .brand .mark {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, var(--orb-hi), var(--orb-mid) 45%, var(--orb-lo));
+    box-shadow: 0 0 12px rgba(142, 162, 255, 0.5);
   }
-  .brand { font-size: 15px; font-weight: 600; letter-spacing: 0.15px; }
-  .brand span { color: var(--muted); font-weight: 400; }
-  .nav-links { display: flex; gap: 10px; }
-  .pill-link {
-    display: inline-flex; align-items: center;
-    font-size: 15px; font-weight: 500; letter-spacing: 0.15px;
-    color: var(--ink); text-decoration: none;
-    background: var(--paper);
-    padding: 8px 16px; border-radius: 9999px;
-    box-shadow: var(--sh-pop);
-    transition: transform .15s ease, box-shadow .2s ease;
+  .top-right { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface); color: var(--txt-2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .15s ease, color .15s ease;
   }
-  .pill-link:hover { transform: translateY(-1px); }
-  .pill-link.dark { background: var(--ink); color: #fff; box-shadow: var(--sh-pop); }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--txt); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .arch-link {
+    font-size: 12px; color: var(--txt-3); text-decoration: none;
+    padding: 6px 4px; transition: color .15s ease;
+  }
+  .arch-link:hover { color: var(--txt-2); }
 
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
-
-  /* ===== Hero ===== */
-  .hero { text-align: center; padding: 72px 0 8px; }
-  .hero h1 {
-    font-size: 48px; font-weight: 300; line-height: 1.08;
-    letter-spacing: -0.96px; color: var(--ink);
-  }
-  .hero .sub {
-    margin: 18px auto 0; max-width: 560px;
-    font-size: 18px; font-weight: 400; line-height: 1.6;
-    letter-spacing: 0.18px; color: var(--ink-soft);
-  }
-
-  /* ===== 徽章 ===== */
-  .badges {
-    display: flex; flex-wrap: wrap; justify-content: center;
-    gap: 10px; margin: 36px auto 0; max-width: 860px;
-  }
-  .badge {
-    background: var(--paper);
-    border-radius: 9999px;
-    padding: 7px 14px;
-    font-size: 13px; font-weight: 500; letter-spacing: 0.14px;
-    color: var(--ink-soft);
-    box-shadow: var(--sh-card);
-  }
-  .badge b { color: var(--ink); font-weight: 600; }
-
-  /* ===== 通话面板（Hero 大圆球） ===== */
-  .panel {
-    margin: 48px auto 0; max-width: 720px;
-    background: var(--paper);
-    border-radius: 24px;
-    box-shadow: var(--sh-card);
-    padding: 56px 32px 32px;
-    text-align: center;
-  }
-
-  .call-stage { position: relative; width: 168px; height: 168px; margin: 0 auto; }
-  .pulse-ring {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%; height: 100%; border-radius: 50%;
-    background: var(--ink);
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    opacity: 0; pointer-events: none;
-  }
-  @keyframes pulse {
-    0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.28; }
-    100% { transform: translate(-50%, -50%) scale(var(--max-scale, 2.2)); opacity: 0; }
-  }
-  .call-core {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: var(--ink); color: #fff;
+  /* ===== 中央舞台 ===== */
+  .stage-area {
+    flex: 1; position: relative; z-index: 10;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; cursor: pointer; border: none; z-index: 2;
-    transition: transform .1s ease, background .3s, box-shadow .2s ease;
-    font-family: inherit;
-    box-shadow: var(--sh-pop);
+    padding: 0 28px; min-height: 0;
   }
-  .call-core:hover { box-shadow: var(--sh-pop), var(--sh-warm); }
-  .call-core .icon { font-size: 40px; line-height: 1; transition: transform .2s; }
-  .call-core .label { font-size: 14px; font-weight: 500; letter-spacing: 0.14px; }
-  .call-core.live { background: var(--danger); }
-  .call-core.connecting { background: var(--muted); cursor: default; }
 
-  /* Canvas 波形条（ElevenLabs 签名元素） */
+  .stage { position: relative; width: 216px; height: 216px; flex: none; }
+  .orb-glow {
+    position: absolute; inset: -48px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(160, 180, 255, 0.55), rgba(120, 140, 255, 0.16) 55%, transparent 72%);
+    filter: blur(28px);
+    opacity: 0.4;
+    transition: opacity .12s linear;
+    pointer-events: none;
+  }
+  .orb-hit {
+    position: absolute; inset: 0; border: none; background: none;
+    border-radius: 50%; cursor: pointer; padding: 0;
+  }
+  .orb-scale {
+    position: absolute; inset: 22px;
+    transition: transform .1s linear;
+    will-change: transform;
+  }
+  .orb-core {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, var(--orb-hi) 0%, var(--orb-mid) 34%, #b9c6ff 64%, var(--orb-lo) 100%);
+    box-shadow:
+      inset 0 -14px 32px rgba(80, 100, 220, 0.42),
+      inset 0 10px 20px rgba(255, 255, 255, 0.85),
+      0 12px 44px rgba(90, 110, 255, 0.35);
+    animation: breathe 4.6s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+  }
+  .orb-sheen {
+    position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+    background: conic-gradient(from 0deg, transparent 0deg 68%, rgba(255, 255, 255, 0.8) 84%, transparent 100%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: sheen 3.4s linear infinite;
+    transition: opacity .3s ease;
+    pointer-events: none;
+  }
+  @keyframes sheen { to { transform: rotate(360deg); } }
+  .stage.connecting .orb-sheen { opacity: 0.55; animation-duration: 2.2s; }
+  .stage.thinking .orb-sheen { opacity: 0.85; animation-duration: 1.3s; }
+  .stage.off .orb-core { animation-play-state: paused; filter: saturate(0.4) brightness(0.75); }
+  .stage.off .orb-glow { opacity: 0.15; }
+
+  /* ===== 状态文字 ===== */
+  .status {
+    margin-top: 34px; min-height: 24px;
+    font-size: 16.5px; font-weight: 500; letter-spacing: 0.01em;
+    color: var(--txt); text-align: center;
+    transition: color .2s ease;
+  }
+  .status.dim { color: var(--txt-3); font-weight: 400; }
+  .hint {
+    margin-top: 8px; min-height: 18px;
+    font-size: 13px; color: var(--txt-3); text-align: center;
+  }
+
+  /* ===== 字幕（居中淡入） ===== */
+  .caption {
+    margin-top: 22px; max-width: 540px; min-height: 30px;
+    font-size: 16px; line-height: 1.65; text-align: center;
+    color: var(--txt-2);
+    transition: opacity .3s ease;
+  }
+  .caption:empty { opacity: 0; }
+  .caption .who { color: var(--txt-3); font-size: 12px; letter-spacing: 0.1em; display: block; margin-bottom: 2px; }
+
+  /* ===== 空闲动作区（CTA + 建议） ===== */
+  .idle-actions {
+    margin-top: 36px;
+    display: flex; flex-direction: column; align-items: center; gap: 30px;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .idle-actions.hidden { opacity: 0; transform: translateY(8px); pointer-events: none; position: absolute; }
+  .cta {
+    border: none; cursor: pointer;
+    background: #ffffff; color: #0a0a0d;
+    font-size: 15.5px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 15px 40px; border-radius: 9999px;
+    box-shadow: 0 2px 10px rgba(255,255,255,0.14), 0 8px 32px rgba(142,162,255,0.25);
+    transition: transform .16s cubic-bezier(0.2, 0.6, 0.4, 1), box-shadow .2s ease, opacity .2s ease;
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(255,255,255,0.18), 0 12px 40px rgba(142,162,255,0.35); }
+  .cta:active { transform: translateY(0) scale(0.98); }
+  .cta:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+  .suggests { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .suggests .lead { font-size: 12.5px; color: var(--txt-3); letter-spacing: 0.06em; }
+  .suggests .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 560px; }
+  .chip {
+    font-size: 13px; color: var(--txt-2);
+    border: 1px solid var(--line); border-radius: 9999px;
+    padding: 8px 16px; background: transparent;
+    transition: background .15s ease, color .15s ease;
+  }
+  .chip:hover { background: var(--surface); color: var(--txt); }
+
+  /* ===== 波形 ===== */
   #wave {
     display: none;
-    margin: 28px auto 0;
-    width: 100%; max-width: 480px; height: 56px;
+    width: 100%; max-width: 440px; height: 44px;
+    margin-top: 8px;
   }
   #wave.show { display: block; }
 
-  /* 通话中控制条：静音 */
-  .call-controls { display: none; justify-content: center; gap: 14px; margin-top: 24px; }
-  .call-controls.show { display: flex; }
-  .ctl-btn {
-    width: 56px; height: 56px; border-radius: 50%; border: none;
-    background: var(--paper); font-size: 22px; cursor: pointer;
+  /* ===== 通话控制 ===== */
+  .controls {
+    display: none;
+    margin-top: 26px;
+    align-items: center; gap: 16px;
+  }
+  .controls.show { display: flex; animation: rise .3s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .ctl {
+    width: 58px; height: 58px; border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface); color: var(--txt);
     display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--sh-card);
-    transition: transform .15s ease, background .2s;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: background .16s ease, transform .16s ease, border-color .16s ease;
   }
-  .ctl-btn:hover { transform: translateY(-1px); background: var(--stone); }
-  .ctl-btn.muted { background: #fde8e8; }
+  .ctl:hover { background: var(--surface-hover); transform: translateY(-2px); }
+  .ctl svg { width: 22px; height: 22px; }
+  .ctl.muted { background: rgba(255, 255, 255, 0.9); color: #0a0a0d; border-color: transparent; }
+  .ctl.end { background: rgba(255, 92, 92, 0.14); border-color: rgba(255, 92, 92, 0.35); color: var(--danger); }
+  .ctl.end:hover { background: rgba(255, 92, 92, 0.24); }
 
-  #status { margin-top: 24px; font-size: 14px; letter-spacing: 0.14px; color: var(--muted); }
-  #status.ok { color: var(--ink); font-weight: 500; }
-
-  /* 字幕区：聊天气泡 */
-  #subtitles {
-    margin: 20px auto 0; max-width: 520px; max-height: 220px;
-    overflow-y: auto; text-align: left;
-    display: flex; flex-direction: column; gap: 8px;
+  /* ===== 对话记录侧栏 ===== */
+  .panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 40;
+    width: 380px; max-width: 92vw;
+    background: rgba(14, 14, 19, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid var(--line);
+    transform: translateX(102%);
+    transition: transform .32s cubic-bezier(0.3, 0.7, 0.3, 1);
+    display: flex; flex-direction: column;
   }
-  #subtitles:empty { display: none; }
+  .panel.open { transform: translateX(0); }
+  .panel-head {
+    flex: none; height: 60px; padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px; font-weight: 600;
+  }
+  .panel-body {
+    flex: 1; overflow-y: auto;
+    padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    scrollbar-width: thin;
+  }
+  .panel-empty { margin: auto; font-size: 13px; color: var(--txt-3); }
   .msg {
-    border-radius: 16px; padding: 9px 14px;
-    font-size: 14px; line-height: 1.5; letter-spacing: 0.14px;
-    max-width: 85%; color: var(--ink);
+    max-width: 86%; padding: 10px 14px; border-radius: 16px;
+    font-size: 14px; line-height: 1.6;
+    animation: rise .22s ease;
   }
-  .msg .who { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 3px; }
-  .msg.assistant { background: var(--stone); align-self: flex-start; box-shadow: var(--sh-edge); }
-  .msg.user { background: var(--paper); box-shadow: var(--sh-card); align-self: flex-end; text-align: right; }
-  .msg.user .who { text-align: right; }
-
-  .meter {
-    margin: 20px auto 0; width: 260px; height: 6px;
-    background: var(--paper-dim); border-radius: 9999px; overflow: hidden;
-    box-shadow: var(--sh-edge);
+  .msg .who { display: block; font-size: 10.5px; font-weight: 500; letter-spacing: 0.09em; color: var(--txt-3); margin-bottom: 3px; }
+  .msg.assistant { background: var(--surface); align-self: flex-start; border-bottom-left-radius: 5px; }
+  .msg.user {
+    background: rgba(255, 255, 255, 0.92); color: #0a0a0d;
+    align-self: flex-end; border-bottom-right-radius: 5px;
   }
-  .meter > div { height: 100%; width: 0%; background: var(--ink); border-radius: 9999px; transition: width .1s; }
-  .meter-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 6px; letter-spacing: 0.14px; }
+  .msg.user .who { color: rgba(0, 0, 0, 0.45); text-align: right; }
+  .scrim {
+    position: fixed; inset: 0; z-index: 30;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
 
-  /* 日志折叠 */
-  .logwrap { margin-top: 24px; text-align: left; }
+  /* ===== 角落日志 ===== */
+  .logwrap { position: fixed; left: 16px; bottom: 12px; z-index: 25; opacity: 0.35; transition: opacity .2s; }
+  .logwrap:hover { opacity: 1; }
   .logwrap summary {
     cursor: pointer; list-style: none;
-    font-size: 13px; font-weight: 500; letter-spacing: 0.14px; color: var(--muted);
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; border-radius: 9999px;
-    transition: background .2s;
+    font-size: 11px; color: var(--txt-3); letter-spacing: 0.05em;
   }
   .logwrap summary::-webkit-details-marker { display: none; }
-  .logwrap summary::before { content: '▸'; transition: transform .2s; }
-  .logwrap details[open] summary::before { transform: rotate(90deg); }
-  .logwrap summary:hover { background: var(--stone); }
   #log {
-    margin-top: 10px; font-size: 12px; color: var(--muted);
-    max-height: 160px; overflow-y: auto;
-    border-top: 1px solid var(--line-soft); padding-top: 10px;
-    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-    letter-spacing: 0;
-  }
-  #log div { padding: 2px 0; }
-
-  /* ===== 架构区 ===== */
-  .section { margin-top: 72px; }
-  .section h2 {
-    font-size: 36px; font-weight: 300; line-height: 1.17;
-    letter-spacing: normal; color: var(--ink);
-    text-align: center; margin-bottom: 8px;
-  }
-  .section .lede {
-    text-align: center; font-size: 16px; color: var(--ink-soft);
-    letter-spacing: 0.16px; margin-bottom: 32px;
-  }
-  .arch {
-    background: var(--paper); border-radius: 24px;
-    box-shadow: var(--sh-card); padding: 32px;
-  }
-  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
-  .node {
-    flex: 1; min-width: 150px;
-    background: var(--stone); border-radius: 16px;
-    padding: 18px 14px; text-align: center;
-    box-shadow: var(--sh-edge);
-  }
-  .node .t { font-size: 14px; font-weight: 600; letter-spacing: 0.14px; margin-bottom: 4px; }
-  .node .d { font-size: 12px; color: var(--muted); line-height: 1.5; letter-spacing: 0.14px; }
-  .arrow {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 0 12px; color: var(--ink);
-    font-size: 12px; font-weight: 600; white-space: nowrap; letter-spacing: 0.14px;
-  }
-  .arrow small { font-weight: 400; color: var(--muted); text-align: center; }
-
-  /* ===== 底部 notes ===== */
-  .notes {
-    margin-top: 72px;
-    background: var(--stone-trans); border-radius: 24px;
-    box-shadow: var(--sh-warm), var(--sh-edge);
-    padding: 32px 36px;
-    font-size: 14px; color: var(--ink-soft); line-height: 1.7; letter-spacing: 0.16px;
-  }
-  .notes h2 { font-size: 24px; font-weight: 300; color: var(--ink); margin-bottom: 16px; }
-  .notes p { margin-bottom: 12px; }
-  .notes p:last-child { margin-bottom: 0; }
-  .notes b { color: var(--ink); font-weight: 600; }
-
-  footer {
-    margin-top: 48px; text-align: center;
-    font-size: 12px; color: var(--muted); letter-spacing: 0.14px;
+    position: absolute; left: 0; bottom: 22px;
+    width: 360px; max-width: 78vw; max-height: 200px; overflow-y: auto;
+    background: rgba(14, 14, 19, 0.95);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--txt-2); line-height: 1.7;
   }
 
-  /* ===== 响应式 ===== */
-  @media (max-width: 1024px) {
-    .hero { padding: 56px 0 4px; }
-    .hero h1 { font-size: 36px; }
-    .section h2 { font-size: 28px; }
-    .flow { flex-direction: column; }
-    .arrow { padding: 10px 0; }
-    .node { min-width: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .orb-core, .orb-sheen { animation: none; }
   }
   @media (max-width: 640px) {
-    .nav-in { padding: 12px 16px; }
-    .brand span { display: none; }
-    .pill-link { font-size: 13px; padding: 7px 12px; }
-    .wrap { padding: 0 16px 64px; }
-    .hero h1 { font-size: 30px; letter-spacing: -0.5px; }
-    .hero .sub { font-size: 16px; }
-    .panel { padding: 40px 20px 24px; }
-    .arch, .notes { padding: 24px 20px; }
+    .stage { width: 172px; height: 172px; }
+    .status { font-size: 15px; }
+    .caption { font-size: 15px; }
+    .arch-link { display: none; }
   }
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-in">
-    <div class="brand">超脑语音助手 <span>· LiveKit Agents Demo</span></div>
-    <div class="nav-links">
-      <a class="pill-link" href="/architecture.html">架构分析</a>
-      <a class="pill-link dark" href="http://localhost:7860" target="_blank" rel="noopener">FastRTC 版</a>
-    </div>
+<header class="topbar">
+  <div class="brand"><span class="mark"></span>超脑</div>
+  <div class="top-right">
+    <a class="arch-link" href="/architecture.html">架构分析 ↗</a>
+    <button class="icon-btn" id="transcriptBtn" title="对话记录" aria-label="对话记录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </button>
   </div>
-</nav>
+</header>
 
-<div class="wrap">
+<main class="stage-area">
+  <div class="stage off" id="stage">
+    <div class="orb-glow" id="orbGlow"></div>
+    <button class="orb-hit" id="orbBtn" aria-label="开始对话">
+      <span class="orb-scale" id="orbScale">
+        <span class="orb-core"></span>
+        <span class="orb-sheen"></span>
+      </span>
+    </button>
+  </div>
 
-  <header class="hero">
-    <h1>编排框架 + Realtime 一体模型</h1>
-    <p class="sub">LiveKit Agents 语音助手 · 横向对比实测 · 2026-07-27 · 通话交互参考 FastRTC</p>
+  <div class="status dim" id="status">和小超说说话</div>
+  <div class="hint" id="statusHint">能查待办、检索知识库，难题会交给深度模型细想</div>
 
-    <div class="badges">
-      <span class="badge">框架 <b>LiveKit Agents 1.1.7</b></span>
-      <span class="badge">传输 <b>WebRTC（本地 LiveKit Server）</b></span>
-      <span class="badge">模型 <b>百炼 qwen3-omni-flash-realtime</b></span>
-      <span class="badge">VAD <b>Silero（本地）+ server_vad</b></span>
-      <span class="badge">打断 <b>支持 barge-in</b></span>
-      <span class="badge">工具调用 <b>query_today_tasks（读 wiki 待办）</b></span>
-      <span class="badge">实测首音频延迟 <b>~514ms</b></span>
-      <span class="badge">前端交互 <b>FastRTC 风格（脉冲通话球）</b></span>
-    </div>
-  </header>
+  <div class="caption" id="caption"></div>
 
-  <section class="panel">
-    <!-- FastRTC 风格：居中大圆球，音频驱动脉冲 -->
-    <div class="call-stage" id="callStage">
-      <div class="pulse-ring" style="animation-delay: 0s"></div>
-      <div class="pulse-ring" style="animation-delay: 0.4s"></div>
-      <div class="pulse-ring" style="animation-delay: 0.8s"></div>
-      <button class="call-core" id="callCore">
-        <span class="icon" id="callIcon">📞</span>
-        <span class="label" id="callLabel">开始通话</span>
-      </button>
-    </div>
-
-    <!-- ElevenLabs 签名波形条：通话中实时渲染麦克风频谱 -->
-    <canvas id="wave"></canvas>
-
-    <div class="call-controls" id="callControls">
-      <button class="ctl-btn" id="muteBtn" title="静音 / 取消静音">🎙️</button>
-    </div>
-
-    <div id="status">未连接</div>
-    <div id="subtitles"></div>
-    <div class="meter"><div id="meterBar"></div></div>
-    <div class="meter-label">麦克风音量</div>
-
-    <div class="logwrap">
-      <details>
-        <summary>连接日志</summary>
-        <div id="log"></div>
-      </details>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>架构</h2>
-    <p class="lede">浏览器 → WebRTC → LiveKit Server → Agent Worker → 百炼 Realtime</p>
-    <div class="arch">
-      <div class="flow">
-        <div class="node"><div class="t">浏览器（本页）</div><div class="d">livekit-client JS SDK<br>麦克风采集 / 播放</div></div>
-        <div class="arrow">WebRTC<small>低延迟音频轨</small></div>
-        <div class="node"><div class="t">LiveKit Server</div><div class="d">SFU 传输层<br>Docker 本地运行</div></div>
-        <div class="arrow">房间事件<small>job 分发</small></div>
-        <div class="node"><div class="t">Agent Worker</div><div class="d">Python · livekit-agents<br>VAD / 打断 / 会话编排</div></div>
-        <div class="arrow">WebSocket<small>Realtime 协议</small></div>
-        <div class="node"><div class="t">百炼 Realtime</div><div class="d">qwen3-omni-flash<br>STT+LLM+TTS 一体</div></div>
+  <div class="idle-actions" id="idleActions">
+    <button class="cta" id="ctaBtn">开始对话</button>
+    <div class="suggests">
+      <span class="lead">接通后可以试着说</span>
+      <div class="row">
+        <span class="chip">我今天有什么待办</span>
+        <span class="chip">wiki 里语音 agent 选型怎么说的</span>
+        <span class="chip">深入想想双 LLM 架构</span>
       </div>
     </div>
-  </section>
+  </div>
 
-  <section class="notes">
-    <h2>说明</h2>
-    <p><b>对比定位：</b>本 demo 是「编排框架 + realtime 一体模型」路线，与现有 voice-agent（浏览器直连百炼 WS，~250ms）对比。多花 ~260ms 编排成本，换来工具调用 / 知识库 RAG / 多模型混编 / 电话 SIP 接入的一等公民能力。</p>
-    <p><b>前端交互：</b>通话面板借鉴 FastRTC 的电话式 UX —— 大圆球随说话音量呼吸缩放、三层脉冲波纹、静音按钮；数据通道仍是 LiveKit WebRTC。</p>
-    <p><b>已知兼容处理：</b>livekit 插件锁定 1.1.7（≥1.2 发 OpenAI GA 协议，百炼兼容端点仅支持 beta，会静默超时）；百炼不回显 response.metadata，已打关联回退补丁。</p>
-    <p><b>玩法：</b>点大圆球开始通话，授权麦克风后直接说话；助手说话时可以插话测试打断，🎙️ 按钮可静音。</p>
-  </section>
+  <canvas id="wave"></canvas>
 
-  <footer>超脑 · 语音 Agent 框架横向对比 · LiveKit 路线实测</footer>
+  <div class="controls" id="callControls">
+    <button class="ctl" id="muteBtn" title="静音" aria-label="静音"></button>
+    <button class="ctl end" id="endBtn" title="结束通话" aria-label="结束通话">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+</main>
 
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-label="对话记录">
+  <div class="panel-head">
+    对话记录
+    <button class="icon-btn" id="panelClose" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="panel-body" id="transcriptList">
+    <div class="panel-empty">还没有对话内容</div>
+  </div>
+</aside>
+
+<div class="logwrap">
+  <details>
+    <summary>日志</summary>
+    <div id="log"></div>
+  </details>
 </div>
 
 <script src="/node_modules/livekit-client/dist/livekit-client.umd.js"></script>
 <script>
-const core = document.getElementById('callCore');
-const callIcon = document.getElementById('callIcon');
-const callLabel = document.getElementById('callLabel');
-const rings = document.querySelectorAll('.pulse-ring');
+const stage = document.getElementById('stage');
+const orbBtn = document.getElementById('orbBtn');
+const orbScale = document.getElementById('orbScale');
+const orbGlow = document.getElementById('orbGlow');
+const statusEl = document.getElementById('status');
+const hintEl = document.getElementById('statusHint');
+const captionEl = document.getElementById('caption');
+const idleActions = document.getElementById('idleActions');
+const ctaBtn = document.getElementById('ctaBtn');
 const controls = document.getElementById('callControls');
 const muteBtn = document.getElementById('muteBtn');
-const statusEl = document.getElementById('status');
-const logEl = document.getElementById('log');
-const meterBar = document.getElementById('meterBar');
+const endBtn = document.getElementById('endBtn');
 const waveEl = document.getElementById('wave');
 const waveCtx = waveEl.getContext('2d');
-let room = null, audioCtx = null, analyser = null, meterRAF = null;
-let muted = false, freqBuf = null;
-let manualHangup = false, retryCount = 0, retryTimer = null;
-const subsEl = document.getElementById('subtitles');
+const panel = document.getElementById('panel');
+const scrim = document.getElementById('scrim');
+const transcriptList = document.getElementById('transcriptList');
+const logEl = document.getElementById('log');
 const decoder = new TextDecoder();
 
+let room = null, audioCtx = null, raf = null;
+let micAnalyser = null, agentAnalyser = null, micBuf = null, agentBuf = null;
+let muted = false, inCall = false;
+let manualHangup = false, retryCount = 0, retryTimer = null;
+
+/* ---- 图标 ---- */
+const ICONS = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>',
+  micOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/><path d="M4 4l16 16"/></svg>',
+};
+function setIcon(el, name) { el.innerHTML = ICONS[name]; }
+setIcon(muteBtn, 'mic');
+
 const STATE_TEXT = {
-  listening: '聆听中…',
-  thinking: '思考中…',
-  speaking: '小超说话中（可直接插话打断）',
+  listening: '正在聆听',
+  thinking: '正在思考',
+  speaking: '',
   idle: '待机',
-  initializing: '初始化…',
+  initializing: '初始化',
 };
 
-function addSubtitle(role, text) {
-  const d = document.createElement('div');
-  d.className = 'msg ' + role;
+function setStatus(text, dim) {
+  statusEl.textContent = text;
+  statusEl.className = dim ? 'status dim' : 'status';
+}
+function setHint(text) { hintEl.textContent = text || ''; }
+
+/* ---- 字幕 & 记录 ---- */
+function pushTranscript(role, text) {
+  // 中央字幕：只保留最新一条
+  captionEl.innerHTML = '';
   const who = document.createElement('span');
   who.className = 'who';
   who.textContent = role === 'user' ? '我' : '小超';
-  d.appendChild(who);
+  captionEl.appendChild(who);
+  captionEl.appendChild(document.createTextNode(text));
+
+  // 侧栏记录
+  const empty = transcriptList.querySelector('.panel-empty');
+  if (empty) empty.remove();
+  const d = document.createElement('div');
+  d.className = 'msg ' + role;
+  const w = document.createElement('span');
+  w.className = 'who';
+  w.textContent = role === 'user' ? '我' : '小超';
+  d.appendChild(w);
   d.appendChild(document.createTextNode(text));
-  subsEl.appendChild(d);
-  subsEl.scrollTop = subsEl.scrollHeight;
+  transcriptList.appendChild(d);
+  transcriptList.scrollTop = transcriptList.scrollHeight;
 }
 
 function handleAgentData(payload) {
   let msg;
   try { msg = JSON.parse(decoder.decode(payload)); } catch { return; }
   if (msg.type === 'agent_state') {
-    statusEl.textContent = STATE_TEXT[msg.state] || msg.state;
-    statusEl.className = 'ok';
+    stage.classList.toggle('thinking', msg.state === 'thinking');
+    if (msg.state === 'speaking') {
+      setStatus('小超说话中', false);
+      setHint('可以直接插话打断');
+    } else {
+      setStatus(STATE_TEXT[msg.state] || msg.state, msg.state === 'idle');
+    }
   } else if (msg.type === 'user_state' && msg.state === 'speaking') {
-    statusEl.textContent = '听到你说话了…';
-    statusEl.className = 'ok';
+    setStatus('正在听你讲', false);
   } else if (msg.type === 'transcript' && msg.text) {
-    addSubtitle(msg.role === 'user' ? 'user' : 'assistant', msg.text);
+    pushTranscript(msg.role === 'user' ? 'user' : 'assistant', msg.text);
   }
 }
 
@@ -428,8 +449,17 @@ function log(msg) {
   logEl.prepend(d);
 }
 
-/* ElevenLabs 签名波形：复用 analyser 频域数据，~40 根圆角柱条 */
-function drawWave() {
+/* ---- 音频分析：麦克风 + 助手远端音频，谁响用谁 ---- */
+function makeAnalyser(stream) {
+  const src = audioCtx.createMediaStreamSource(stream);
+  const an = audioCtx.createAnalyser();
+  an.fftSize = 64;
+  an.smoothingTimeConstant = 0.8;
+  src.connect(an);
+  return { analyser: an, buf: new Uint8Array(an.frequencyBinCount) };
+}
+
+function drawWave(buf) {
   const dpr = window.devicePixelRatio || 1;
   const w = waveEl.clientWidth, h = waveEl.clientHeight;
   if (waveEl.width !== w * dpr || waveEl.height !== h * dpr) {
@@ -438,96 +468,85 @@ function drawWave() {
   }
   waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   waveCtx.clearRect(0, 0, w, h);
-  const BARS = 40;
-  const gap = 4;
+  const BARS = 32;
+  const gap = 5;
   const barW = (w - gap * (BARS - 1)) / BARS;
-  const step = Math.max(1, Math.floor(freqBuf.length / BARS));
+  const step = Math.max(1, Math.floor(buf.length / BARS));
   for (let i = 0; i < BARS; i++) {
-    const v = freqBuf[Math.min(freqBuf.length - 1, i * step)] / 255;
+    const v = buf[Math.min(buf.length - 1, i * step)] / 255;
     const bh = Math.max(3, v * h);
     const x = i * (barW + gap);
     const y = (h - bh) / 2;
     const r = Math.min(barW / 2, bh / 2);
-    waveCtx.fillStyle = v > 0.04 ? '#000000' : '#d8d3c8';
+    waveCtx.fillStyle = v > 0.04 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.16)';
     waveCtx.beginPath();
-    if (waveCtx.roundRect) {
-      waveCtx.roundRect(x, y, barW, bh, r);
-    } else {
-      waveCtx.rect(x, y, barW, bh);
-    }
+    if (waveCtx.roundRect) waveCtx.roundRect(x, y, barW, bh, r);
+    else waveCtx.rect(x, y, barW, bh);
     waveCtx.fill();
   }
 }
 
-/* FastRTC PulsingIcon 同款逻辑：
-   AnalyserNode(fftSize=64, smoothing=0.8) 取频域均值 → 圆球缩放 + 波纹透明度 */
-function startPulse(stream) {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const src = audioCtx.createMediaStreamSource(stream);
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 64;
-  analyser.smoothingTimeConstant = 0.8;
-  src.connect(analyser);
-  freqBuf = new Uint8Array(analyser.frequencyBinCount);
-  const timeBuf = new Uint8Array(analyser.frequencyBinCount);
-  waveEl.classList.add('show');
+function startVisuals() {
   (function tick() {
-    analyser.getByteFrequencyData(freqBuf);
-    const avg = freqBuf.reduce((a, b) => a + b, 0) / freqBuf.length / 255;
-    // 圆球呼吸缩放（1 ~ 1.15x，同 FastRTC）
-    core.style.transform = `scale(${1 + avg * 0.15})`;
-    // 三层波纹：音量越大扩散越远、越明显
-    rings.forEach(r => {
-      r.style.setProperty('--max-scale', (1 + avg * 6).toFixed(2));
-      r.style.opacity = avg > 0.02 ? '' : '0';
-    });
-    // ElevenLabs 波形条（频域柱条）
-    drawWave();
-    // 底部电平条（时域峰值）
-    analyser.getByteTimeDomainData(timeBuf);
-    let peak = 0;
-    for (let i = 0; i < timeBuf.length; i++) peak = Math.max(peak, Math.abs(timeBuf[i] - 128));
-    meterBar.style.width = Math.min(100, peak * 2) + '%';
-    meterRAF = requestAnimationFrame(tick);
+    let energy = 0, activeBuf = null;
+    if (agentAnalyser) {
+      agentAnalyser.analyser.getByteFrequencyData(agentAnalyser.buf);
+      const avg = agentAnalyser.buf.reduce((a, b) => a + b, 0) / agentAnalyser.buf.length / 255;
+      if (avg > energy) { energy = avg; activeBuf = agentAnalyser.buf; }
+    }
+    if (micAnalyser) {
+      micAnalyser.analyser.getByteFrequencyData(micAnalyser.buf);
+      const avg = micAnalyser.buf.reduce((a, b) => a + b, 0) / micAnalyser.buf.length / 255;
+      if (avg > energy) { energy = avg; activeBuf = micAnalyser.buf; }
+    }
+    orbScale.style.transform = `scale(${1 + energy * 0.15})`;
+    orbGlow.style.opacity = 0.4 + energy * 0.55;
+    orbGlow.style.transform = `scale(${1 + energy * 0.2})`;
+    if (activeBuf) drawWave(activeBuf);
+    raf = requestAnimationFrame(tick);
   })();
 }
 
-function stopPulse() {
-  if (meterRAF) cancelAnimationFrame(meterRAF);
+function stopVisuals() {
+  if (raf) cancelAnimationFrame(raf);
+  raf = null;
+  micAnalyser = null; agentAnalyser = null;
   if (audioCtx) audioCtx.close();
-  audioCtx = null; meterRAF = null;
-  core.style.transform = '';
-  rings.forEach(r => { r.style.opacity = '0'; });
-  meterBar.style.width = '0%';
-  waveEl.classList.remove('show');
+  audioCtx = null;
+  orbScale.style.transform = '';
+  orbGlow.style.opacity = '';
+  orbGlow.style.transform = '';
   waveCtx.clearRect(0, 0, waveEl.width, waveEl.height);
 }
 
+/* ---- 通话状态机 ---- */
 function setCallState(state) {
   // idle | connecting | live
-  core.className = 'call-core' + (state === 'live' ? ' live' : state === 'connecting' ? ' connecting' : '');
+  stage.classList.toggle('connecting', state === 'connecting');
+  stage.classList.toggle('off', state === 'idle');
   if (state === 'live') {
-    callIcon.textContent = '📵';
-    callLabel.textContent = '挂断';
+    inCall = true;
+    idleActions.classList.add('hidden');
     controls.classList.add('show');
-  } else if (state === 'connecting') {
-    callIcon.textContent = '⏳';
-    callLabel.textContent = '连接中…';
-    controls.classList.remove('show');
+    waveEl.classList.add('show');
   } else {
-    callIcon.textContent = '📞';
-    callLabel.textContent = '开始通话';
+    inCall = false;
+    idleActions.classList.remove('hidden');
     controls.classList.remove('show');
+    waveEl.classList.remove('show');
     muted = false;
     muteBtn.classList.remove('muted');
-    muteBtn.textContent = '🎙️';
+    setIcon(muteBtn, 'mic');
+    ctaBtn.disabled = false;
+    ctaBtn.textContent = state === 'connecting' ? '连接中…' : '开始对话';
+    ctaBtn.disabled = state === 'connecting';
   }
 }
 
 async function connect() {
   setCallState('connecting');
-  statusEl.textContent = '正在连接…';
-  statusEl.className = '';
+  setStatus('正在连接', true);
+  setHint('');
   try {
     const roomName = 'voice-demo-' + Math.random().toString(36).slice(2, 6);
     const res = await fetch('/token?room=' + roomName + '&identity=' + encodeURIComponent('web-' + Math.random().toString(36).slice(2, 6)));
@@ -539,67 +558,93 @@ async function connect() {
       if (track.kind === 'audio') {
         track.attach();
         log('已订阅助手音频轨');
-        statusEl.textContent = '助手已加入 · 对话中（可直接插话打断）';
-        statusEl.className = 'ok';
+        setStatus('小超已上线', false);
+        setHint('直接说话即可');
+        // 分析助手音频，让球随小超说话律动
+        if (audioCtx && track.mediaStreamTrack) {
+          try { agentAnalyser = makeAnalyser(new MediaStream([track.mediaStreamTrack])); } catch (e) { log('agent analyser: ' + e.message); }
+        }
       }
     });
     room.on(LivekitClient.RoomEvent.ParticipantConnected, (p) => {
       log('参与者加入: ' + p.identity);
-      statusEl.textContent = '助手已加入 · 对话中（可直接插话打断）';
-      statusEl.className = 'ok';
+      setStatus('小超已上线', false);
+      setHint('直接说话即可');
     });
     room.on(LivekitClient.RoomEvent.DataReceived, (payload) => handleAgentData(payload));
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
-      stopPulse();
+      stopVisuals();
       setCallState('idle');
       room = null;
       if (!manualHangup && retryCount < 3) {
         retryCount++;
-        statusEl.textContent = `连接断开，${2 * retryCount} 秒后自动重连（第 ${retryCount} 次）…`;
-        statusEl.className = '';
+        setStatus(`连接断开，${2 * retryCount} 秒后自动重连`, true);
+        setHint(`第 ${retryCount} 次重试`);
         log('连接断开，自动重连中…');
         retryTimer = setTimeout(() => connect(), 2000 * retryCount);
       } else {
-        statusEl.textContent = manualHangup ? '已断开' : '连接断开（重连失败，请手动点击开始通话）';
-        statusEl.className = '';
+        setStatus(manualHangup ? '已结束，下次再聊' : '连接断开，请重新开始', true);
+        setHint(manualHangup ? '' : '点击开始对话重试');
+        stage.classList.add('off');
       }
     });
 
     await room.connect(url, token);
     log('已连接房间 ' + roomName);
     await room.localParticipant.setMicrophoneEnabled(true);
-    log('麦克风已开启，直接说话即可（助手说话时可直接插话）');
+    log('麦克风已开启');
 
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const micPub = room.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone);
     if (micPub && micPub.track && micPub.track.mediaStreamTrack) {
-      startPulse(new MediaStream([micPub.track.mediaStreamTrack]));
+      micAnalyser = makeAnalyser(new MediaStream([micPub.track.mediaStreamTrack]));
     }
+    startVisuals();
 
-    statusEl.textContent = '已连接 · 等待助手加入（Agent Worker 会自动进入房间）';
-    statusEl.className = 'ok';
+    setStatus('小超正在赶来', true);
+    setHint('通常只要一两秒');
     retryCount = 0;
     setCallState('live');
   } catch (e) {
-    statusEl.textContent = '连接失败: ' + e.message;
+    setStatus('连接失败: ' + e.message, true);
     setCallState('idle');
     log('连接失败: ' + e.message);
   }
 }
 
-core.addEventListener('click', () => {
-  if (core.classList.contains('connecting')) return;
+function hangup() {
+  manualHangup = true;
+  if (room) room.disconnect();
+}
+
+ctaBtn.addEventListener('click', () => {
   if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
-  if (room) { manualHangup = true; room.disconnect(); } else { manualHangup = false; retryCount = 0; connect(); }
+  manualHangup = false; retryCount = 0;
+  connect();
 });
+orbBtn.addEventListener('click', () => {
+  if (!inCall && !stage.classList.contains('connecting')) ctaBtn.click();
+});
+endBtn.addEventListener('click', hangup);
 
 muteBtn.addEventListener('click', async () => {
   if (!room) return;
   muted = !muted;
   await room.localParticipant.setMicrophoneEnabled(!muted);
   muteBtn.classList.toggle('muted', muted);
-  muteBtn.textContent = muted ? '🔇' : '🎙️';
+  setIcon(muteBtn, muted ? 'micOff' : 'mic');
   log(muted ? '已静音' : '已取消静音');
 });
+
+/* ---- 对话记录面板 ---- */
+function togglePanel(open) {
+  panel.classList.toggle('open', open);
+  scrim.classList.toggle('show', open);
+}
+document.getElementById('transcriptBtn').addEventListener('click', () => togglePanel(!panel.classList.contains('open')));
+document.getElementById('panelClose').addEventListener('click', () => togglePanel(false));
+scrim.addEventListener('click', () => togglePanel(false));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') togglePanel(false); });
 </script>
 </body>
 </html>
