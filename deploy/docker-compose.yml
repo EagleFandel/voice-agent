@@ -32,8 +32,11 @@ services:
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
       AGENT_MODEL: ${AGENT_MODEL:-qwen3-omni-flash-realtime}
       AGENT_VOICE: ${AGENT_VOICE:-Cherry}
+      KNOWLEDGE_DIR: /knowledge
     volumes:
-      - ../../wiki:/wiki:ro   # query_today_tasks / search_wiki 读仓库 wiki
+      # 运营方知识库：把课程/培训 .md 放进宿主机 ./knowledge（可用 KNOWLEDGE_HOST_DIR 改路径）
+      # 扔文件即生效，agent 下次会话自动重建索引
+      - ${KNOWLEDGE_HOST_DIR:-./knowledge}:/knowledge:ro
     depends_on:
       - livekit
     restart: unless-stopped

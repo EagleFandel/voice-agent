@@ -19,7 +19,7 @@
 ## 部署步骤
 
 ```bash
-# 1. 仓库拷到服务器（只需 project/voice-agent-comparison 与 wiki 目录）
+# 1. 仓库拷到服务器（project/voice-agent-comparison 即可，知识库独立配置）
 cd project/voice-agent-comparison/deploy
 
 # 2. 生成密钥
@@ -50,7 +50,7 @@ livekit-server --房间事件--> agent worker --WS--> 百炼 realtime
 ## 注意事项
 
 - **livekit 插件锁 1.1.7**：agent.Dockerfile 已锁定，勿升级（≥1.2 与百炼 realtime 协议不兼容）
-- **wiki 挂载**：`query_today_tasks` / `search_wiki` 工具读容器内 `/wiki`（compose 里把宿主机 `../../wiki` 只读挂载），服务器上缺 wiki 目录时这两个工具返回空
+- **知识库挂载（方案一：运营方配置）**：`search_wiki` / `query_today_tasks` 读容器内 `/knowledge`（compose 把宿主机 `deploy/knowledge/` 只读挂载，可用 `.env` 的 `KNOWLEDGE_HOST_DIR` 改路径）。把课程/培训 .md 扔进该目录即生效，下次会话自动重建索引，无需重启；目录为空时这两个工具返回「知识库暂不可用」，不影响通话。agent 代码侧用 `KNOWLEDGE_DIR` 环境变量定位，本地开发缺省回退到仓库 `wiki/`
 - **密钥安全**：`deploy/.env` 含全部密钥，已在 git 中忽略，不要外发
 - **TURN/TLS（可选加固）**：企业网/4G 下如果 UDP 全被拦，编辑 livekit.yaml 打开 `turn.tls_port: 5349` + domain，并放行 5349
 - 本地开发不受影响：本目录只服务生产部署，本地仍用根目录 start.bat

@@ -2,8 +2,8 @@
 
 框架能力示例（相比最初 minimal 版新增的）：
 - 配置外置：模型 / 声音 / 指令 / base_url 全部走环境变量（见下方 CONFIG）
-- 工具调用：query_today_tasks（读 wiki/daily-tasks.md 今日待办）、
-  search_wiki（RAG-lite：百炼 embedding 检索整个 wiki/）、
+- 工具调用：query_today_tasks（读知识库 daily-tasks.md 今日待办）、
+  search_wiki（RAG-lite：百炼 embedding 检索知识库目录）、
   deep_think（双 LLM：把深度问题转发给高推理模型 qwen3-max）
 - 状态推送：agent 状态(listening/thinking/speaking)经 data channel 发给前端
 - 字幕推送：对话文本（能拿到多少推多少）经 data channel 发给前端
@@ -63,6 +63,11 @@ CONFIG = {
 # 仓库根目录（本文件位于 project/voice-agent-comparison/livekit-demo/）
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
+# 知识库目录：query_today_tasks / search_wiki 从这里读 .md。
+# 运营方部署时用 KNOWLEDGE_DIR 环境变量指向资料目录（compose 挂载），
+# 本地开发缺省回退到仓库 wiki/。
+KNOWLEDGE_DIR = Path(os.getenv("KNOWLEDGE_DIR") or (REPO_ROOT / "wiki"))
+
 # --- DashScope compatibility patch -----------------------------------------
 # DashScope does not echo `response.metadata` back in response.created, so the
 # openai plugin cannot correlate client_event_id -> response_id and every
@@ -117,15 +122,15 @@ def _read_today_section(md_path: Path) -> str:
 @function_tool
 async def query_today_tasks() -> str:
     """查询用户今天（当日）的待办事项。用户问"今天要做什么/有什么待办/日程安排"时使用。"""
-    section = _read_today_section(REPO_ROOT / "wiki" / "daily-tasks.md")
+    section = _read_today_section(KNOWLEDGE_DIR / "daily-tasks.md")
     if not section:
         return "今天的待办记录为空或没有找到对应日期的小节。"
     logger.info("query_today_tasks: 命中今日待办 %d 字", len(section))
     return section
 
 
-# --- RAG-lite：wiki 向量索引（模块级懒加载 + 缓存） -------------------------
-# 首次调用 search_wiki 时扫描 REPO_ROOT/"wiki"/**/*.md，按小节切块并用百炼
+# --- RAG-lite：知识库向量索引（模块级懒加载 + 缓存） -----------------------
+# 首次调用 search_wiki 时扫描 KNOWLEDGE_DIR/**/*.md，按小节切块并用百炼
 # text-embedding-v3 向量化，结果缓存到 _WIKI_INDEX，避免每次调用重建。
 DASHSCOPE_HTTP_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 EMBEDDING_MODEL = "text-embedding-v3"
@@ -141,15 +146,14 @@ _WIKI_INDEX_CACHE = Path(__file__).parent / ".wiki_index_cache.pkl"
 
 
 def _wiki_manifest() -> list[tuple[str, int, int]]:
-    """wiki 目录的文件清单 (相对路径, mtime_ns, size)，用于判断缓存是否过期。"""
-    wiki_dir = REPO_ROOT / "wiki"
+    """知识库目录的文件清单 (相对路径, mtime_ns, size)，用于判断缓存是否过期。"""
     manifest: list[tuple[str, int, int]] = []
-    for md in sorted(wiki_dir.rglob("*.md")):
+    for md in sorted(KNOWLEDGE_DIR.rglob("*.md")):
         try:
             st = md.stat()
         except OSError:
             continue
-        manifest.append((str(md.relative_to(REPO_ROOT)), st.st_mtime_ns, st.st_size))
+        manifest.append((str(md.relative_to(KNOWLEDGE_DIR)), st.st_mtime_ns, st.st_size))
     return manifest
 
 
@@ -217,16 +221,15 @@ def _chunk_markdown(text: str, max_len: int = 500) -> list[str]:
 
 
 def _scan_wiki_chunks() -> list[tuple[str, str]]:
-    """扫描 wiki 目录下所有 .md，返回 (相对路径, 切块文本) 列表。"""
-    wiki_dir = REPO_ROOT / "wiki"
+    """扫描知识库目录下所有 .md，返回 (相对路径, 切块文本) 列表。"""
     chunks: list[tuple[str, str]] = []
-    for md in sorted(wiki_dir.rglob("*.md")):
+    for md in sorted(KNOWLEDGE_DIR.rglob("*.md")):
         try:
             text = md.read_text(encoding="utf-8")
         except Exception as e:  # noqa: BLE001
             logger.warning("search_wiki: 读取 %s 失败: %s", md, e)
             continue
-        rel = str(md.relative_to(REPO_ROOT))
+        rel = str(md.relative_to(KNOWLEDGE_DIR))
         for piece in _chunk_markdown(text):
             chunks.append((rel, piece))
     return chunks
